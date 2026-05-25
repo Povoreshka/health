@@ -1,15 +1,21 @@
-// Health.jsx
 import React, { useState, useEffect } from 'react';
-
 import { useNavigate } from 'react-router-dom';
+import { healthAPI } from '../api/health.api';
 import './Health.css';
 
 const Health = () => {
-  const [fitnessData, setFitnessData] = useState(() => {
-    const savedData = localStorage.getItem('fitnessData');
-    return savedData ? JSON.parse(savedData) : [];
-  });
+  const [fitnessData, setFitnessData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
+  
+  // Получаем ID пользователя из localStorage (из авторизации)
+  const getUserId = () => {
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+    return userData.id || localStorage.getItem('userId');
+  };
+  
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     
@@ -44,13 +50,34 @@ const Health = () => {
     notes: ''
   });
   
-  const [editingIndex, setEditingIndex] = useState(null);
+  const [editingId, setEditingId] = useState(null);
   const [activeTab, setActiveTab] = useState('form');
 
-  // Сохраняем данные в localStorage
+  // Загрузка данных из API
   useEffect(() => {
-    localStorage.setItem('fitnessData', JSON.stringify(fitnessData));
-  }, [fitnessData]);
+    loadHealthData();
+  }, []);
+
+  const loadHealthData = async () => {
+    const userId = getUserId();
+    if (!userId) {
+      navigate('/onboarding/0');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const data = await healthAPI.getByUserId(userId);
+      setFitnessData(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading health data:', err);
+      setError(err.message);
+      setFitnessData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -67,7 +94,7 @@ const Health = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Валидация
@@ -77,49 +104,121 @@ const Health = () => {
       return;
     }
     
-    if (editingIndex !== null) {
-      const updatedData = [...fitnessData];
-      updatedData[editingIndex] = formData;
-      setFitnessData(updatedData);
-      setEditingIndex(null);
-    } else {
-      setFitnessData(prev => [formData, ...prev]);
+    const userId = getUserId();
+    if (!userId) {
+      alert('Пожалуйста, войдите в аккаунт');
+      navigate('/onboarding/0');
+      return;
     }
     
-    // Сброс формы
-    setFormData({
-      date: new Date().toISOString().split('T')[0],
-      weight: '',
-      bodyFat: '',
-      muscleMass: '',
-      chest: '',
-      waist: '',
-      hips: '',
-      thigh: '',
-      biceps: '',
-      avgHeartRate: '',
-      maxHeartRate: '',
-      calories: '',
-      protein: '',
-      fats: '',
-      carbs: '',
-      water: '',
-      energyLevel: '5',
-      painLevel: '0',
-      sleepQuality: '5',
-      notes: ''
-    });
+    try {
+      setSaving(true);
+      const entryData = {
+        user_id: parseInt(userId),
+        date: formData.date,
+        weight: formData.weight ? parseFloat(formData.weight) : null,
+        body_fat: formData.bodyFat ? parseFloat(formData.bodyFat) : null,
+        muscle_mass: formData.muscleMass ? parseFloat(formData.muscleMass) : null,
+        chest: formData.chest ? parseFloat(formData.chest) : null,
+        waist: formData.waist ? parseFloat(formData.waist) : null,
+        hips: formData.hips ? parseFloat(formData.hips) : null,
+        thigh: formData.thigh ? parseFloat(formData.thigh) : null,
+        biceps: formData.biceps ? parseFloat(formData.biceps) : null,
+        avg_heart_rate: formData.avgHeartRate ? parseInt(formData.avgHeartRate) : null,
+        max_heart_rate: formData.maxHeartRate ? parseInt(formData.maxHeartRate) : null,
+        calories: formData.calories ? parseInt(formData.calories) : null,
+        protein: formData.protein ? parseInt(formData.protein) : null,
+        fats: formData.fats ? parseInt(formData.fats) : null,
+        carbs: formData.carbs ? parseInt(formData.carbs) : null,
+        water: formData.water ? parseFloat(formData.water) : null,
+        energy_level: parseInt(formData.energyLevel),
+        pain_level: parseInt(formData.painLevel),
+        sleep_quality: parseInt(formData.sleepQuality),
+        notes: formData.notes || null
+      };
+      
+      let newEntry;
+      if (editingId !== null) {
+        // Обновление существующей записи
+        newEntry = await healthAPI.update(editingId, entryData);
+        setFitnessData(prev => prev.map(item => item.id === editingId ? newEntry : item));
+        setEditingId(null);
+      } else {
+        // Создание новой записи
+        newEntry = await healthAPI.create(entryData);
+        setFitnessData(prev => [newEntry, ...prev]);
+      }
+      
+      // Сброс формы
+      setFormData({
+        date: new Date().toISOString().split('T')[0],
+        weight: '',
+        bodyFat: '',
+        muscleMass: '',
+        chest: '',
+        waist: '',
+        hips: '',
+        thigh: '',
+        biceps: '',
+        avgHeartRate: '',
+        maxHeartRate: '',
+        calories: '',
+        protein: '',
+        fats: '',
+        carbs: '',
+        water: '',
+        energyLevel: '5',
+        painLevel: '0',
+        sleepQuality: '5',
+        notes: ''
+      });
+      
+      alert('✅ Запись успешно сохранена!');
+    } catch (err) {
+      console.error('Error saving health entry:', err);
+      alert('❌ Ошибка при сохранении: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleEdit = (index) => {
-    setFormData(fitnessData[index]);
-    setEditingIndex(index);
+  const handleEdit = (record) => {
+    setFormData({
+      date: record.date,
+      weight: record.weight || '',
+      bodyFat: record.body_fat || '',
+      muscleMass: record.muscle_mass || '',
+      chest: record.chest || '',
+      waist: record.waist || '',
+      hips: record.hips || '',
+      thigh: record.thigh || '',
+      biceps: record.biceps || '',
+      avgHeartRate: record.avg_heart_rate || '',
+      maxHeartRate: record.max_heart_rate || '',
+      calories: record.calories || '',
+      protein: record.protein || '',
+      fats: record.fats || '',
+      carbs: record.carbs || '',
+      water: record.water || '',
+      energyLevel: record.energy_level?.toString() || '5',
+      painLevel: record.pain_level?.toString() || '0',
+      sleepQuality: record.sleep_quality?.toString() || '5',
+      notes: record.notes || ''
+    });
+    setEditingId(record.id);
     setActiveTab('form');
   };
 
-  const handleDelete = (index) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Удалить эту запись?')) {
-      setFitnessData(prev => prev.filter((_, i) => i !== index));
+      try {
+        await healthAPI.delete(id);
+        setFitnessData(prev => prev.filter(item => item.id !== id));
+        alert('✅ Запись удалена');
+      } catch (err) {
+        console.error('Error deleting health entry:', err);
+        alert('❌ Ошибка при удалении: ' + err.message);
+      }
     }
   };
 
@@ -131,8 +230,10 @@ const Health = () => {
     const earliest = sortedData[0];
     
     const calculateDiff = (field) => {
-      if (latest[field] && earliest[field]) {
-        const diff = (parseFloat(latest[field]) - parseFloat(earliest[field])).toFixed(1);
+      const latestVal = latest[field];
+      const earliestVal = earliest[field];
+      if (latestVal && earliestVal) {
+        const diff = (parseFloat(latestVal) - parseFloat(earliestVal)).toFixed(1);
         return {
           value: diff,
           diff: parseFloat(diff)
@@ -143,12 +244,12 @@ const Health = () => {
 
     return {
       weight: calculateDiff('weight'),
-      bodyFat: calculateDiff('bodyFat'),
+      bodyFat: calculateDiff('body_fat'),
       waist: calculateDiff('waist'),
       chest: calculateDiff('chest'),
-      avgHeartRate: calculateDiff('avgHeartRate'),
-      energyLevel: calculateDiff('energyLevel'),
-      sleepQuality: calculateDiff('sleepQuality')
+      avgHeartRate: calculateDiff('avg_heart_rate'),
+      energyLevel: calculateDiff('energy_level'),
+      sleepQuality: calculateDiff('sleep_quality')
     };
   };
 
@@ -176,11 +277,10 @@ const Health = () => {
     return date.toLocaleDateString('ru-RU', { weekday: 'short' });
   };
 
-  // Расчет средних значений
   const calculateAverages = () => {
     if (fitnessData.length === 0) return null;
     
-    const fields = ['weight', 'bodyFat', 'waist', 'chest', 'avgHeartRate', 'energyLevel', 'sleepQuality'];
+    const fields = ['weight', 'body_fat', 'waist', 'chest', 'avg_heart_rate', 'energy_level', 'sleep_quality'];
     const averages = {};
     
     fields.forEach(field => {
@@ -199,18 +299,40 @@ const Health = () => {
 
   const averages = calculateAverages();
 
-  // Последние 7 записей для графика
   const last7Records = fitnessData
     .filter(record => record.weight)
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 7)
     .reverse();
 
+  if (loading) {
+    return (
+      <div className="health-loading">
+        <div className="spinner"></div>
+        <p>Загрузка данных...</p>
+      </div>
+    );
+  }
+
+  if (error && fitnessData.length === 0) {
+    return (
+      <div className="health-error">
+        <div className="error-container">
+          <p>❌ Ошибка: {error}</p>
+          <button onClick={loadHealthData} className="retry-btn">Повторить</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="health-container">
       
       <header className="health-header">
-        <h1>📖 Дневник Здоровья</h1>
+        <h1>
+          <span className="header-emoji">📖</span>
+          <span>Дневник Здоровья</span>
+        </h1>
         <p>Отслеживайте свои показатели здоровья и самочувствия каждый день</p>
         <button className="back-button" onClick={() => navigate('/home')}>
             <span className="back-arrow">←</span>
@@ -220,7 +342,32 @@ const Health = () => {
       <div className="health-tabs">
         <button 
           className={`tab-btn ${activeTab === 'form' ? 'active' : ''}`}
-          onClick={() => setActiveTab('form')}
+          onClick={() => {
+            setActiveTab('form');
+            setEditingId(null);
+            setFormData({
+              date: new Date().toISOString().split('T')[0],
+              weight: '',
+              bodyFat: '',
+              muscleMass: '',
+              chest: '',
+              waist: '',
+              hips: '',
+              thigh: '',
+              biceps: '',
+              avgHeartRate: '',
+              maxHeartRate: '',
+              calories: '',
+              protein: '',
+              fats: '',
+              carbs: '',
+              water: '',
+              energyLevel: '5',
+              painLevel: '0',
+              sleepQuality: '5',
+              notes: ''
+            });
+          }}
         >
           ✍️ Новая запись
         </button>
@@ -234,7 +381,7 @@ const Health = () => {
           className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
         >
-          🗓️ История
+          🗓️ История ({fitnessData.length})
         </button>
       </div>
 
@@ -548,15 +695,20 @@ const Health = () => {
               </div>
 
               <div className="form-buttons">
-                <button type="button" onClick={handleSubmit} className="btn-primary">
-                  {editingIndex !== null ? 'Сохранить изменения' : '📝 Добавить запись'}
+                <button 
+                  type="button" 
+                  onClick={handleSubmit} 
+                  className="btn-primary"
+                  disabled={saving}
+                >
+                  {saving ? 'Сохранение...' : (editingId !== null ? 'Сохранить изменения' : '📝 Добавить запись')}
                 </button>
-                {editingIndex !== null && (
+                {editingId !== null && (
                   <button 
                     type="button" 
                     className="btn-secondary"
                     onClick={() => {
-                      setEditingIndex(null);
+                      setEditingId(null);
                       setFormData({
                         date: new Date().toISOString().split('T')[0],
                         weight: '',
@@ -592,7 +744,6 @@ const Health = () => {
 
       {activeTab === 'stats' && (
         <div className="stats-grid">
-          {/* Прогресс */}
           {progress && (
             <div className="health-card">
               <h2><i>📈</i> Динамика показателей</h2>
@@ -603,7 +754,7 @@ const Health = () => {
                     progress.weight.diff > 0 ? 'negative' : 'neutral'
                   }`}>
                     <h3>Вес</h3>
-                    <div className="value">{progress.weight.value} кг</div>
+                    <div className="value">{Math.abs(progress.weight.value)} кг</div>
                     <div className="change">
                       {progress.weight.diff > 0 ? '+' : ''}{progress.weight.value}
                     </div>
@@ -615,7 +766,7 @@ const Health = () => {
                     progress.waist.diff > 0 ? 'negative' : 'neutral'
                   }`}>
                     <h3>Талия</h3>
-                    <div className="value">{progress.waist.value} см</div>
+                    <div className="value">{Math.abs(progress.waist.value)} см</div>
                     <div className="change">
                       {progress.waist.diff > 0 ? '+' : ''}{progress.waist.value}
                     </div>
@@ -627,7 +778,7 @@ const Health = () => {
                     progress.avgHeartRate.diff > 0 ? 'negative' : 'neutral'
                   }`}>
                     <h3>Пульс</h3>
-                    <div className="value">{progress.avgHeartRate.value} уд/мин</div>
+                    <div className="value">{Math.abs(progress.avgHeartRate.value)} уд/мин</div>
                     <div className="change">
                       {progress.avgHeartRate.diff > 0 ? '+' : ''}{progress.avgHeartRate.value}
                     </div>
@@ -639,7 +790,7 @@ const Health = () => {
                     progress.energyLevel.diff < 0 ? 'negative' : 'neutral'
                   }`}>
                     <h3>Энергия</h3>
-                    <div className="value">{progress.energyLevel.value}/10</div>
+                    <div className="value">{Math.abs(progress.energyLevel.value)}/10</div>
                     <div className="change">
                       {progress.energyLevel.diff > 0 ? '+' : ''}{progress.energyLevel.value}
                     </div>
@@ -649,7 +800,6 @@ const Health = () => {
             </div>
           )}
 
-          {/* Средние значения */}
           {averages && (
             <div className="health-card">
               <h2><i>📊</i> Средние показатели</h2>
@@ -666,29 +816,28 @@ const Health = () => {
                     <div className="average-value">{averages.waist} см</div>
                   </div>
                 )}
-                {averages.avgHeartRate && (
+                {averages.avg_heart_rate && (
                   <div className="average-item">
                     <div className="average-label">Пульс:</div>
-                    <div className="average-value">{averages.avgHeartRate} уд/мин</div>
+                    <div className="average-value">{averages.avg_heart_rate} уд/мин</div>
                   </div>
                 )}
-                {averages.energyLevel && (
+                {averages.energy_level && (
                   <div className="average-item">
                     <div className="average-label">Энергия:</div>
-                    <div className="average-value">{averages.energyLevel}/10</div>
+                    <div className="average-value">{averages.energy_level}/10</div>
                   </div>
                 )}
-                {averages.sleepQuality && (
+                {averages.sleep_quality && (
                   <div className="average-item">
                     <div className="average-label">Сон:</div>
-                    <div className="average-value">{averages.sleepQuality}/10</div>
+                    <div className="average-value">{averages.sleep_quality}/10</div>
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* График веса */}
           {last7Records.length > 1 && (
             <div className="health-card">
               <h2><i>📉</i> Динамика веса за неделю</h2>
@@ -749,42 +898,42 @@ const Health = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {fitnessData.map((record, index) => (
-                    <tr key={index}>
+                  {fitnessData.map((record) => (
+                    <tr key={record.id}>
                       <td>{formatDate(record.date)}</td>
                       <td>{record.weight ? `${record.weight} кг` : '-'}</td>
                       <td>{record.waist ? `${record.waist} см` : '-'}</td>
                       <td>{record.chest ? `${record.chest} см` : '-'}</td>
-                      <td>{record.avgHeartRate ? `${record.avgHeartRate} уд/мин` : '-'}</td>
+                      <td>{record.avg_heart_rate ? `${record.avg_heart_rate} уд/мин` : '-'}</td>
                       <td>
-                        {record.energyLevel && (
+                        {record.energy_level && (
                           <div className="level-indicator" style={{
-                            backgroundColor: getLevelColor(record.energyLevel, 'energy')
+                            backgroundColor: getLevelColor(record.energy_level, 'energy')
                           }}>
-                            {record.energyLevel}/10
+                            {record.energy_level}/10
                           </div>
                         )}
                       </td>
                       <td>
-                        {record.sleepQuality && (
+                        {record.sleep_quality && (
                           <div className="level-indicator" style={{
-                            backgroundColor: getLevelColor(record.sleepQuality, 'sleep')
+                            backgroundColor: getLevelColor(record.sleep_quality, 'sleep')
                           }}>
-                            {record.sleepQuality}/10
+                            {record.sleep_quality}/10
                           </div>
                         )}
                       </td>
                       <td>
                         <div className="table-actions">
                           <button 
-                            onClick={() => handleEdit(index)} 
+                            onClick={() => handleEdit(record)} 
                             className="icon-btn icon-btn-edit"
                             title="Редактировать"
                           >
                             ✏️
                           </button>
                           <button 
-                            onClick={() => handleDelete(index)} 
+                            onClick={() => handleDelete(record.id)} 
                             className="icon-btn icon-btn-delete"
                             title="Удалить"
                           >

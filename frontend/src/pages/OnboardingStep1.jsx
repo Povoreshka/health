@@ -1,15 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './OnboardingStep1.css';
 
 const OnboardingStep1 = () => {
+    const { user, updateUser } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
         age: '',
         gender: ''
     });
-    
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        // Проверяем, есть ли пользователь в контексте
+        if (user && user.id) {
+            // Если пользователь уже есть, заполняем форму его данными
+            setFormData({
+                name: user.name || '',
+                age: user.age || '',
+                gender: user.gender || ''
+            });
+        } else {
+            // Проверяем localStorage на случай, если пользователь не в контексте
+            const savedUser = localStorage.getItem('userData');
+            if (savedUser) {
+                try {
+                    const userData = JSON.parse(savedUser);
+                    setFormData({
+                        name: userData.name || '',
+                        age: userData.age || '',
+                        gender: userData.gender || ''
+                    });
+                } catch (err) {
+                    console.error('Error parsing saved user:', err);
+                }
+            }
+        }
+    }, [user]);
 
     const handleChange = (e) => {
         setFormData({
@@ -18,9 +47,44 @@ const OnboardingStep1 = () => {
         });
     };
 
-    const handleNext = () => {
-        localStorage.setItem('onboardingStep1', JSON.stringify(formData));
-        navigate('/onboarding/2');
+    const handleNext = async () => {
+        if (!formData.name || !formData.age || !formData.gender) {
+            alert('Пожалуйста, заполните все поля');
+            return;
+        }
+
+        setLoading(true);
+        
+        try {
+            // Сохраняем данные в localStorage для совместимости
+            const onboardingData = {
+                name: formData.name,
+                age: parseInt(formData.age),
+                gender: formData.gender
+            };
+            localStorage.setItem('onboardingStep1', JSON.stringify(onboardingData));
+            
+            // Если пользователь авторизован, обновляем его данные через API
+            const userId = localStorage.getItem('userId');
+            if (userId) {
+                await updateUser({
+                    name: formData.name,
+                    age: parseInt(formData.age),
+                    gender: formData.gender
+                });
+            }
+            
+            navigate('/onboarding/2');
+        } catch (error) {
+            console.error('Error saving data:', error);
+            alert('Ошибка при сохранении данных');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleBack = () => {
+        navigate('/onboarding/0');
     };
 
     const isFormValid = () => {
@@ -30,7 +94,7 @@ const OnboardingStep1 = () => {
     return (
         <div className="onboarding-step1">
             <div className="onboarding-wrapper">
-                <div className="back-button" onClick={() => navigate('/')}>
+                <div className="back-button" onClick={handleBack}>
                     ←
                 </div>
                 
@@ -61,6 +125,7 @@ const OnboardingStep1 = () => {
                             onChange={handleChange}
                             placeholder="Ваше имя"
                             className="form-input"
+                            disabled={loading}
                         />
                     </div>
                     
@@ -75,6 +140,7 @@ const OnboardingStep1 = () => {
                             min="10"
                             max="100"
                             className="form-input"
+                            disabled={loading}
                         />
                     </div>
                     
@@ -83,14 +149,14 @@ const OnboardingStep1 = () => {
                         <div className="gender-options">
                             <div 
                                 className={`gender-option ${formData.gender === 'male' ? 'selected' : ''}`}
-                                onClick={() => setFormData({...formData, gender: 'male'})}
+                                onClick={() => !loading && setFormData({...formData, gender: 'male'})}
                             >
                                 <div className="gender-icon">👨</div>
                                 <span>Мужской</span>
                             </div>
                             <div 
                                 className={`gender-option ${formData.gender === 'female' ? 'selected' : ''}`}
-                                onClick={() => setFormData({...formData, gender: 'female'})}
+                                onClick={() => !loading && setFormData({...formData, gender: 'female'})}
                             >
                                 <div className="gender-icon">👩</div>
                                 <span>Женский</span>
@@ -101,11 +167,11 @@ const OnboardingStep1 = () => {
                 
                 <div className="button-container">
                     <button 
-                        className={`next-button ${isFormValid() ? '' : 'disabled'}`}
+                        className={`next-button ${isFormValid() && !loading ? '' : 'disabled'}`}
                         onClick={handleNext}
-                        disabled={!isFormValid()}
+                        disabled={!isFormValid() || loading}
                     >
-                        Далее
+                        {loading ? 'Сохранение...' : 'Далее'}
                     </button>
                 </div>
             </div>

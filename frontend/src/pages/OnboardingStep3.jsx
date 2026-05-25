@@ -33,13 +33,15 @@ const OnboardingStep3 = () => {
         );
     };
 
+    // ИСПРАВЛЕНО: Сохраняем goals в отдельный ключ onboardingStep3
     const handleNext = () => {
-        const step1Data = JSON.parse(localStorage.getItem('onboardingStep1') || '{}');
-        const stepData = {
-            ...step1Data,
-            goals
+        // НЕ ПЕРЕЗАПИСЫВАЕМ onboardingStep1!
+        const step3Data = {
+            goals: goals
         };
-        localStorage.setItem('onboardingStep1', JSON.stringify(stepData));
+        
+        console.log('Saving goals to onboardingStep3:', step3Data);
+        localStorage.setItem('onboardingStep3', JSON.stringify(step3Data));
         navigate('/onboarding/4');
     };
 

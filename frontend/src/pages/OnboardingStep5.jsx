@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './OnboardingStep5.css';
 
 const OnboardingStep5 = () => {
     const [workoutsPerWeek, setWorkoutsPerWeek] = useState(3);
     const [loading, setLoading] = useState(false);
-    
     const navigate = useNavigate();
+    const API_URL = 'http://localhost:5000/api';
 
-    React.useEffect(() => {
-        const step1Data = JSON.parse(localStorage.getItem('onboardingStep1') || '{}');
-        if (!step1Data.name || !step1Data.experience) {
-            navigate('/onboarding/4');
+    useEffect(() => {
+        const userId = localStorage.getItem('userId');
+        if (!userId) {
+            navigate('/onboarding/0');
         }
     }, [navigate]);
 
@@ -26,44 +26,101 @@ const OnboardingStep5 = () => {
     ];
 
     const handleComplete = async () => {
-        const step1Data = JSON.parse(localStorage.getItem('onboardingStep1') || '{}');
-        
-        const onboardingData = {
-            ...step1Data,
-            workoutsPerWeek,
-            completedAt: new Date().toISOString()
-        };
-
         try {
             setLoading(true);
             
-            // Сохраняем данные пользователя
+            // Получаем все данные из онбординга
+            const step1Data = JSON.parse(localStorage.getItem('onboardingStep1') || '{}');
+            const step2Data = JSON.parse(localStorage.getItem('onboardingStep2') || '{}');
+            const step3Data = JSON.parse(localStorage.getItem('onboardingStep3') || '{}');
+            const step4Data = JSON.parse(localStorage.getItem('onboardingStep4') || '{}');
+            
+            const userId = localStorage.getItem('userId');
+            const userEmail = localStorage.getItem('userEmail');
+            
+            console.log('=== ALL ONBOARDING DATA ===');
+            console.log('Step1 (name, age, gender):', step1Data);
+            console.log('Step2 (height, weight):', step2Data);
+            console.log('Step3 (goals):', step3Data);
+            console.log('Step4 (experience):', step4Data);
+            console.log('Workouts per week:', workoutsPerWeek);
+            console.log('User ID:', userId);
+            console.log('User Email:', userEmail);
+            
+            if (!userId) {
+                alert('Ошибка: пользователь не найден');
+                navigate('/onboarding/0');
+                return;
+            }
+            
+            // Проверяем наличие goals
+            const goals = step3Data.goals || [];
+            console.log('Goals to save:', goals);
+            
+            // Подготавливаем данные для обновления
+            const updateData = {
+                name: step1Data.name,
+                age: parseInt(step1Data.age) || null,
+                gender: step1Data.gender,
+                height: parseFloat(step2Data.height) || null,
+                weight: parseFloat(step2Data.weight) || null,
+                goals: goals,  // Массив целей
+                experience: step4Data.experience,
+                workouts_per_week: workoutsPerWeek,
+                email: userEmail || null
+            };
+            
+            console.log('Sending update data to server:', JSON.stringify(updateData, null, 2));
+            
+            // Отправляем запрос на обновление пользователя
+            const response = await fetch(`${API_URL}/users/${userId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updateData)
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to update user');
+            }
+            
+            const result = await response.json();
+            console.log('Update response:', result);
+            
+            // Получаем обновленные данные пользователя из БД для проверки
+            const userResponse = await fetch(`${API_URL}/users/${userId}`);
+            const updatedUser = await userResponse.json();
+            console.log('Updated user from DB:', updatedUser);
+            console.log('Goals in DB:', updatedUser.goals);
+            console.log('BMI in DB:', updatedUser.bmi);
+            
+            // Обновляем localStorage
             const userData = {
-                ...onboardingData,
-                id: Date.now().toString(),
+                ...updateData,
+                id: userId,
+                bmi: updatedUser.bmi,
+                workoutsPerWeek: workoutsPerWeek,
+                email: userEmail,
                 createdAt: new Date().toISOString(),
                 workouts_count: 0,
                 total_minutes: 0,
-                streak: 0,
-                shockMode: {
-                    active: true,
-                    intensity: 'high',
-                    startDate: new Date().toISOString(),
-                    duration: 30 // дней
-                }
+                streak: 0
             };
-            
             localStorage.setItem('userData', JSON.stringify(userData));
-            localStorage.removeItem('onboardingStep1');
             
-            // Добавляем небольшую задержку для лучшего UX
-            setTimeout(() => {
-                // Переход на страницу home
-                navigate('/home');
-            }, 500);
+            // Очищаем временные данные
+            localStorage.removeItem('onboardingStep1');
+            localStorage.removeItem('onboardingStep2');
+            localStorage.removeItem('onboardingStep3');
+            localStorage.removeItem('onboardingStep4');
+            
+            // Переходим на главную
+            navigate('/home');
             
         } catch (error) {
             console.error('Error saving onboarding data:', error);
+            alert('Ошибка при сохранении данных: ' + error.message);
+        } finally {
             setLoading(false);
         }
     };

@@ -1,342 +1,517 @@
-.onboarding-step1 {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fafafa;
-  padding: 24px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+/* =========================================================
+   ONBOARDING STEP 1 — MODERN DARK UI
+========================================================= */
+
+:root {
+
+    --bg: #070b14;
+    --bg2: #111827;
+
+    --card: rgba(15, 23, 42, 0.92);
+
+    --border: rgba(255,255,255,0.08);
+
+    --text: #f8fafc;
+    --text-secondary: #94a3b8;
+
+    --yellow: #ffc83d;
+    --yellow2: #ff9f1a;
+
+    --green: #4caf50;
+
+    --shadow:
+        0 25px 70px rgba(0,0,0,0.45);
+
+    --transition: .28s ease;
 }
 
-.onboarding-wrapper1 {
-  width: 100%;
-  background: white;
-  border-radius: 24px;
-  padding: 48px 40px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
-  border: 1px solid #f0f0f0;
-  
-  /* Широкая версия для компьютеров */
-  max-width: 500px;
+/* =========================================================
+   BASE
+========================================================= */
+
+* {
+    box-sizing: border-box;
 }
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+
+    width: 100%;
+    overflow-x: hidden;
+}
+
+body {
+
+    font-family:
+        Inter,
+        system-ui,
+        sans-serif;
+
+    color: var(--text);
+
+    background:
+        radial-gradient(circle at top left,
+            rgba(139,92,246,0.14),
+            transparent 30%),
+
+        radial-gradient(circle at top right,
+            rgba(0,210,255,0.12),
+            transparent 25%),
+
+        linear-gradient(
+            180deg,
+            var(--bg),
+            var(--bg2)
+        );
+}
+
+/* =========================================================
+   PAGE
+========================================================= */
+
+.onboarding-step1 {
+
+    width: 100%;
+    min-height: 100vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 40px 20px;
+
+    position: relative;
+
+    overflow: hidden;
+}
+
+/* =========================================================
+   WRAPPER
+========================================================= */
+
+.onboarding-wrapper {
+
+    width: 100%;
+    max-width: 560px;
+
+    position: relative;
+    z-index: 2;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 30px;
+
+    padding: 38px;
+
+    border-radius: 40px;
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(10,14,24,0.96),
+            rgba(16,22,36,0.98)
+        );
+
+    border: 1px solid rgba(255,255,255,0.06);
+
+    backdrop-filter: blur(24px);
+
+    box-shadow: var(--shadow);
+
+    overflow: hidden;
+}
+
+/* Glow */
+
+.onboarding-wrapper::before {
+
+    content: '';
+
+    position: absolute;
+
+    width: 260px;
+    height: 260px;
+
+    top: -140px;
+    right: -140px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(255,200,61,0.10),
+            transparent 70%
+        );
+
+    z-index: 0;
+}
+
+.onboarding-wrapper::after {
+
+    content: '';
+
+    position: absolute;
+
+    width: 220px;
+    height: 220px;
+
+    bottom: -120px;
+    left: -120px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(0,210,255,0.08),
+            transparent 70%
+        );
+
+    z-index: 0;
+}
+
+.onboarding-wrapper > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* =========================================================
+   BACK BUTTON
+========================================================= */
 
 .back-button {
-  font-size: 24px;
-  color: #666;
-  cursor: pointer;
-  margin-bottom: 32px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  transition: all 0.2s;
+
+    width: 54px;
+    height: 54px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 18px;
+
+    background: rgba(255,255,255,0.05);
+
+    border: 1px solid rgba(255,255,255,0.06);
+
+    cursor: pointer;
+
+    font-size: 24px;
+    font-weight: 700;
+
+    transition: var(--transition);
 }
 
 .back-button:hover {
-  background: #f8f9fa;
-  color: #1a1a1a;
+
+    transform: translateY(-2px);
+
+    background: rgba(255,255,255,0.08);
 }
 
+/* =========================================================
+   PROGRESS
+========================================================= */
+
 .progress-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 40px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 10px;
 }
 
 .progress-step {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  font-weight: 500;
-  color: #ccc;
-  background: #f8f9fa;
-  transition: all 0.3s;
-  position: relative;
+
+    width: 42px;
+    height: 42px;
+
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 14px;
+    font-weight: 800;
+
+    background: rgba(255,255,255,0.06);
+
+    color: var(--text-secondary);
+
+    border: 1px solid rgba(255,255,255,0.06);
+
+    transition: var(--transition);
 }
 
 .progress-step.active {
-  background: #1a1a1a;
-  color: white;
-  animation: pulseStep 2s infinite;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--yellow),
+            var(--yellow2)
+        );
+
+    color: #000;
+
+    box-shadow:
+        0 10px 30px rgba(255,200,61,0.25);
 }
 
 .progress-line {
-  width: 60px;
-  height: 1px;
-  background: #f0f0f0;
-  margin: 0 8px;
+
+    width: 28px;
+    height: 4px;
+
+    border-radius: 999px;
+
+    background: rgba(255,255,255,0.08);
 }
 
+/* =========================================================
+   HEADER
+========================================================= */
+
 .onboarding-header {
-  text-align: center;
-  margin-bottom: 48px;
+    text-align: center;
 }
 
 .onboarding-header h1 {
-  font-size: 32px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 12px 0;
+
+    margin: 0;
+
+    font-size: 42px;
+    font-weight: 900;
+
+    letter-spacing: -2px;
 }
 
 .onboarding-header p {
-  font-size: 16px;
-  color: #666;
-  margin: 0;
+
+    margin-top: 14px;
+
+    color: var(--text-secondary);
+
+    font-size: 16px;
 }
 
+/* =========================================================
+   FORM
+========================================================= */
+
 .form-container {
-  margin-bottom: 48px;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 24px;
 }
 
 .form-group {
-  margin-bottom: 32px;
+    width: 100%;
 }
 
 .form-group label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: #666;
-  margin-bottom: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+
+    display: block;
+
+    margin-bottom: 12px;
+
+    color: var(--text-secondary);
+
+    font-size: 14px;
+    font-weight: 700;
 }
 
 .form-input {
-  width: 100%;
-  padding: 18px 20px;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  font-size: 16px;
-  color: #1a1a1a;
-  background: white;
-  transition: all 0.2s;
-  box-sizing: border-box;
-}
 
-.form-input:focus {
-  outline: none;
-  border-color: #1a1a1a;
-  box-shadow: 0 0 0 4px rgba(26, 26, 26, 0.1);
-  transform: translateY(-2px);
+    width: 100%;
+
+    padding: 18px 20px;
+
+    border-radius: 20px;
+
+    border: 1px solid rgba(255,255,255,0.06);
+
+    background: rgba(255,255,255,0.05);
+
+    color: white;
+
+    font-size: 15px;
+
+    outline: none;
+
+    transition: var(--transition);
 }
 
 .form-input::placeholder {
-  color: #999;
+    color: rgba(255,255,255,0.28);
 }
 
+.form-input:focus {
+
+    border-color: rgba(255,200,61,0.4);
+
+    box-shadow:
+        0 0 0 4px rgba(255,200,61,0.08);
+}
+
+/* =========================================================
+   GENDER
+========================================================= */
+
 .gender-options {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+
+    display: flex;
+
+    gap: 16px;
 }
 
 .gender-option {
-  padding: 24px 20px;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
+
+    flex: 1;
+
+    padding: 24px 18px;
+
+    border-radius: 24px;
+
+    background: rgba(255,255,255,0.05);
+
+    border: 1px solid rgba(255,255,255,0.06);
+
+    cursor: pointer;
+
+    transition: var(--transition);
+
+    text-align: center;
 }
 
 .gender-option:hover {
-  border-color: #ccc;
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+
+    transform: translateY(-3px);
+
+    background: rgba(255,255,255,0.08);
 }
 
 .gender-option.selected {
-  border-color: #1a1a1a;
-  background: #1a1a1a;
-  color: white;
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(26, 26, 26, 0.15);
+
+    border-color: rgba(255,200,61,0.4);
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255,200,61,0.14),
+            rgba(255,159,26,0.08)
+        );
+
+    box-shadow:
+        0 10px 30px rgba(255,200,61,0.12);
 }
 
 .gender-icon {
-  font-size: 40px;
+
+    font-size: 48px;
+
+    margin-bottom: 12px;
 }
 
 .gender-option span {
-  font-size: 16px;
-  font-weight: 500;
+
+    font-size: 15px;
+    font-weight: 700;
 }
 
+/* =========================================================
+   BUTTON
+========================================================= */
+
 .button-container {
-  display: flex;
-  justify-content: center;
+    margin-top: 10px;
 }
 
 .next-button {
-  width: 100%;
-  padding: 20px 24px;
-  background: #1a1a1a;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-  overflow: hidden;
+
+    width: 100%;
+
+    border: none;
+    cursor: pointer;
+
+    padding: 18px;
+
+    border-radius: 22px;
+
+    font-size: 16px;
+    font-weight: 900;
+
+    color: #000;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--yellow),
+            var(--yellow2)
+        );
+
+    transition: var(--transition);
 }
 
 .next-button:hover:not(.disabled) {
-  background: #333;
-  transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(26, 26, 26, 0.2);
-}
 
-.next-button:active:not(.disabled) {
-  transform: translateY(-1px);
+    transform: translateY(-3px);
+
+    box-shadow:
+        0 16px 36px rgba(255,200,61,0.25);
 }
 
 .next-button.disabled {
-  background: #f0f0f0;
-  color: #999;
-  cursor: not-allowed;
+
+    opacity: .45;
+
+    cursor: not-allowed;
+
+    transform: none;
 }
 
-@keyframes pulseStep {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
+/* =========================================================
+   MOBILE
+========================================================= */
 
-/* ========== АДАПТИВНОСТЬ ========== */
+@media (max-width: 600px) {
 
-/* Большие мониторы (более 1440px) */
-@media (min-width: 1440px) {
-  .onboarding-wrapper {
-    max-width: 550px;
-    padding: 56px 48px;
-  }
-  
-  .onboarding-header h1 {
-    font-size: 36px;
-  }
-  
-  .onboarding-header p {
-    font-size: 18px;
-  }
-  
-  .form-input {
-    padding: 20px 24px;
-    font-size: 17px;
-  }
-  
-  .gender-option {
-    padding: 28px 24px;
-  }
-  
-  .gender-icon {
-    font-size: 44px;
-  }
-  
-  .gender-option span {
-    font-size: 17px;
-  }
-  
-  .next-button {
-    padding: 22px 28px;
-    font-size: 17px;
-  }
-}
+    .onboarding-step1 {
+        padding: 24px 16px;
+    }
 
-/* Компьютеры и ноутбуки (1024px - 1439px) */
-@media (min-width: 1024px) and (max-width: 1439px) {
-  .onboarding-wrapper {
-    max-width: 520px;
-    padding: 52px 44px;
-  }
-  
-  .gender-option {
-    padding: 22px 18px;
-  }
-}
+    .onboarding-wrapper {
 
-/* Планшеты (768px - 1023px) */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .onboarding-wrapper {
-    max-width: 500px;
-    padding: 44px 36px;
-  }
-  
-  .gender-option {
-    padding: 20px 16px;
-  }
-  
-  .gender-icon {
-    font-size: 36px;
-  }
-}
+        padding: 24px;
 
-/* Мобильные устройства (до 767px) */
-@media (max-width: 767px) {
-  .onboarding-wrapper {
-    max-width: 100%;
-    padding: 40px 32px;
-    border-radius: 20px;
-  }
-  
-  .gender-options {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  
-  .gender-option {
-    padding: 20px 16px;
-  }
-  
-  .gender-icon {
-    font-size: 32px;
-  }
-  
-  .progress-line {
-    width: 40px;
-  }
-}
+        border-radius: 28px;
 
-/* Очень маленькие мобильные (до 480px) */
-@media (max-width: 480px) {
-  .onboarding-step1 {
-    padding: 16px;
-  }
-  
-  .onboarding-wrapper {
-    padding: 32px 24px;
-  }
-  
-  .onboarding-header h1 {
-    font-size: 28px;
-  }
-  
-  .onboarding-header p {
-    font-size: 15px;
-  }
-  
-  .form-input {
-    padding: 16px 18px;
-  }
-  
-  .gender-option {
-    padding: 16px 12px;
-  }
-  
-  .gender-option span {
-    font-size: 14px;
-  }
+        gap: 24px;
+    }
+
+    .onboarding-header h1 {
+        font-size: 34px;
+    }
+
+    .gender-options {
+        flex-direction: column;
+    }
+
+    .progress-line {
+        width: 18px;
+    }
+
+    .progress-step {
+        width: 36px;
+        height: 36px;
+        font-size: 13px;
+    }
 }

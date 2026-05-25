@@ -1,37 +1,85 @@
-import api from './axios.js';
+// src/api/health.api.js
 
-export const getHealthStats = async () => {
-    try {
-        const response = await api.get('/health/stats');
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching health stats:', error);
-        // Моковые данные для демо
-        return {
-            heart_rate: 72,
-            blood_pressure: '120/80',
-            weight: 70,
-            bmi: 22,
-            sleep_hours: 7,
-            steps: 8500
-        };
+// Используем абсолютный URL к бэкенду
+const API_URL = 'http://localhost:5000/api';
+
+export const healthAPI = {
+    // Получить все записи здоровья пользователя
+    getByUserId: async (userId) => {
+        try {
+            const response = await fetch(`${API_URL}/health/${userId}`);
+            if (!response.ok) throw new Error('Failed to fetch health entries');
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            return [];
+        }
+    },
+
+    // Получить записи здоровья за период
+    getByDateRange: async (userId, startDate, endDate) => {
+        try {
+            const response = await fetch(`${API_URL}/health/${userId}/range?startDate=${startDate}&endDate=${endDate}`);
+            if (!response.ok) throw new Error('Failed to fetch health entries range');
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            return [];
+        }
+    },
+
+    // Создать запись здоровья
+    create: async (entryData) => {
+        try {
+            const response = await fetch(`${API_URL}/health`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(entryData)
+            });
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to save health entry');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
+    },
+
+    // Обновить запись здоровья (только id, userId не нужен)
+    update: async (id, entryData) => {
+        try {
+            const response = await fetch(`${API_URL}/health/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(entryData)
+            });
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to update health entry');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
+    },
+
+    // Удалить запись здоровья (только id, userId не нужен)
+    delete: async (id) => {
+        try {
+            const response = await fetch(`${API_URL}/health/${id}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to delete health entry');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
     }
 };
-
-export const addHealthMetrics = async (metrics) => {
-    try {
-        const response = await api.post('/health/metrics', metrics);
-        return response.data;
-    } catch (error) {
-        console.error('Error adding health metrics:', error);
-        throw error;
-    }
-};
-
-// Экспорт по умолчанию для обратной совместимости
-const healthApi = {
-    getHealthStats,
-    addHealthMetrics
-};
-
-export default healthApi;

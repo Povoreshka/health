@@ -1,513 +1,930 @@
+/* =========================
+   GLOBAL
+========================= */
+
 .dashboard {
     min-height: 100vh;
-    background: #f8f9fa;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    padding-bottom: 40px;
+    font-family: 'Inter', sans-serif;
+    color: #e5e7eb;
+
+    background:
+        radial-gradient(900px 400px at 10% 0%, rgba(99,102,241,0.18), transparent),
+        radial-gradient(800px 400px at 90% 10%, rgba(34,197,94,0.12), transparent),
+        #0b1220;
+
+    padding-bottom: 60px;
 }
 
-/* Хедер дашборда */
+/* === DASHBOARD HEADER (УЛУЧШЕННЫЙ) === */
 .dashboard-header {
-  text-align: center;
-  margin-bottom: 30px;
-  padding: 35px 20px;
-  background: white;
-  border-radius: 20px;
-  color: #1e293b;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
-  position: relative;
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
-}
-
-.dashboard-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234f46e5' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-}
-
-.dashboard-header h1 {
-  font-size: 2.8em;
-  margin-bottom: 15px;
-  font-weight: 700;
-  position: relative;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-  color: #1e293b;
-  letter-spacing: -0.5px;
-  line-height: 1.2;
-}
-
-/* .dashboard-header {
-    background: white;
-    padding: 32px 24px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    margin-bottom: 32px;
-} */
-
-/* Круглая кнопка "Назад" */
-.back-button {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: white;
-    border: 2px solid #e0e0e0;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 14px;
+
+    padding: 18px 20px;
+    margin: 12px;
+    border-radius: 18px;
+
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+
+    position: sticky;
+    top: 10px;
+    z-index: 50;
+}
+
+/* кнопка назад */
+.dashboard-header .back-button {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+
+    border: none;
     cursor: pointer;
-    transition: all 0.3s ease;
-    margin-bottom: 20px;
-    padding: 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
 
-.back-button:hover {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-color: transparent;
-    transform: translateY(-2px) translateX(-4px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.25);
-}
+    background: rgba(255,255,255,0.08);
+    color: #f1f5f9;
 
-.back-arrow {
-    font-size: 20px;
-    font-weight: 700;
-    color: #666;
-    transition: all 0.3s ease;
-    margin-right: 2px; /* Чтобы стрелка была по центру */
-}
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-.back-button:hover .back-arrow {
-    color: white;
-    transform: translateX(-2px);
-}
-
-.back-button span:not(.back-arrow) {
-    display: none; /* Скрываем текст "Назад" */
-}
-
-.dashboard-header h1 {
-    font-size: 36px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin: 0 0 12px 0;
-}
-
-.dashboard-header p {
     font-size: 18px;
-    color: #666;
+
+    transition: 0.2s ease;
+}
+
+.dashboard-header .back-button:hover {
+    background: rgba(34,197,94,0.25);
+    transform: scale(1.05);
+}
+
+/* текстовая часть */
+.dashboard-header .header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* главный заголовок */
+.dashboard-header h1 {
+    font-size: 18px; /* 👈 уменьшил (было слишком жирно/крупно) */
+    font-weight: 600;
+    color: #f8fafc;
     margin: 0;
+    letter-spacing: 0.2px;
 }
 
-/* Основное содержимое */
+/* подзаголовок */
+.dashboard-header p {
+    font-size: 12px; /* 👈 читаемый, но не громоздкий */
+    color: rgba(226,232,240,0.7);
+    margin: 0;
+    line-height: 1.2;
+}
+
+/* маленький акцент слева (визуальная "ось") */
+.dashboard-header::before {
+    content: "";
+    width: 4px;
+    height: 70%;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #22c55e, #3b82f6);
+    position: absolute;
+    left: 8px;
+}
+
+/* =========================
+   CONTENT
+========================= */
+
 .dashboard-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 24px;
+    padding: 12px;
 }
 
-/* Вкладки периода */
+/* =========================
+   TABS (chips)
+========================= */
+
 .period-tabs {
     display: flex;
-    gap: 12px;
-    margin-bottom: 40px;
-    background: white;
-    padding: 12px;
-    border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    gap: 8px;
+    overflow-x: auto;
+
+    padding: 10px 2px 14px;
 }
 
 .tab {
-    flex: 1;
-    padding: 16px 24px;
-    background: none;
-    border: none;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 500;
-    color: #666;
-    cursor: pointer;
-    transition: all 0.3s;
-}
+    flex: 0 0 auto;
 
-.tab:hover {
-    background: rgba(0, 0, 0, 0.05);
+    padding: 8px 12px;
+    border-radius: 999px;
+
+    font-size: 12px;
+
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+
+    color: rgba(255,255,255,0.7);
+
+    cursor: pointer;
+    transition: 0.2s;
 }
 
 .tab.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+    background: linear-gradient(135deg, rgba(34,197,94,0.18), rgba(99,102,241,0.12));
+    border-color: rgba(34,197,94,0.25);
+    color: #fff;
 }
 
-/* Общая статистика */
-.overall-stats {
-    margin-bottom: 40px;
-}
+/* =========================
+   🔥 IMPORTANT FIX: GRID LAYOUT
+========================= */
 
-.overall-stats h2 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #1a1a1a;
-    margin: 0 0 24px 0;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 24px;
-}
-
-.stat-card {
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s;
-    border-left: 4px solid #667eea;
-}
-
-.stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.stat-icon {
-    font-size: 48px;
-    width: 64px;
-    height: 64px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-}
-
-.stat-info h3 {
-    font-size: 32px;
-    font-weight: 600;
-    color: #1a1a1a;
-    margin: 0 0 4px 0;
-}
-
-.stat-info p {
-    font-size: 14px;
-    color: #666;
-    margin: 0;
-}
-
-/* Секция графиков */
 .charts-section {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 32px;
-    margin-bottom: 40px;
-}
 
-.chart-container {
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-    border: 1px solid #f0f0f0;
-}
+    /* 2 колонки на десктопе */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 
-.chart-container h3 {
-    font-size: 18px;
-    font-weight: 600;
-    color: #1a1a1a;
-    margin: 0 0 24px 0;
-    display: flex;
-    align-items: center;
     gap: 10px;
 }
 
-.chart-wrapper {
-    height: 300px;
-}
-
-.chart-container.full-width {
-    grid-column: 1 / -1;
-}
-
-.chart-container.full-width .chart-wrapper {
-    height: 350px;
-}
-
-/* Детальная статистика */
-.detailed-stats {
-    background: white;
-    border-radius: 16px;
-    padding: 32px;
-    margin-bottom: 40px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-    border: 1px solid #f0f0f0;
-}
-
-.detailed-stats h2 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #1a1a1a;
-    margin: 0 0 24px 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.stats-table {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.stat-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 0;
-    border-bottom: 1px solid #f0f0f0;
-    transition: all 0.3s;
-}
-
-.stat-row:hover {
-    background: rgba(102, 126, 234, 0.05);
-    padding: 16px;
-    border-radius: 8px;
-    transform: translateX(4px);
-}
-
-.stat-row:last-child {
-    border-bottom: none;
-}
-
-.stat-label {
-    font-size: 16px;
-    color: #666;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.stat-value {
-    font-size: 18px;
-    font-weight: 600;
-    color: #1a1a1a;
-}
-
-/* Инсайты */
-.insights-section {
-    margin-bottom: 40px;
-}
-
-.insights-section h2 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #1a1a1a;
-    margin: 0 0 24px 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.insights-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 24px;
-}
-
-.insight-card {
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s;
-    border: 1px solid #f0f0f0;
-}
-
-.insight-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    border-color: #667eea;
-}
-
-.insight-icon {
-    font-size: 40px;
-    margin-bottom: 16px;
-    width: 64px;
-    height: 64px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-}
-
-.insight-card h4 {
-    font-size: 18px;
-    font-weight: 600;
-    color: #1a1a1a;
-    margin: 0 0 12px 0;
-}
-
-.insight-card p {
-    font-size: 14px;
-    color: #666;
-    margin: 0;
-    line-height: 1.6;
-}
-
-/* Кнопка экспорта */
-.export-section {
-    text-align: center;
-}
-
-.export-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 16px;
-    padding: 20px 40px;
-    font-size: 18px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 0 auto;
-}
-
-.export-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
-    gap: 16px;
-}
-
-/* Загрузка */
-.dashboard-loading {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.dashboard-loading .spinner {
-    width: 50px;
-    height: 50px;
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid #667eea;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 20px;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Адаптивность */
-@media (max-width: 1024px) {
+/* мобильный */
+@media (max-width: 800px) {
     .charts-section {
         grid-template-columns: 1fr;
     }
-    
-    .chart-container.full-width {
-        grid-column: 1;
-    }
 }
 
+/* =========================
+   CHART CARD
+========================= */
+
+.chart-container {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+
+    border-radius: 16px;
+
+    padding: 10px 12px;
+
+    backdrop-filter: blur(10px);
+
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+
+    transition: 0.2s;
+}
+
+.chart-container:hover {
+    transform: translateY(-2px);
+}
+
+.chart-container h3 {
+    font-size: 12px;
+    margin: 0 0 6px 0;
+
+    opacity: 0.85;
+}
+
+/* =========================
+   STATS CARDS
+========================= */
+.stats-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin: 30px 0;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #0b1220 0%, #111a2b 100%);
+    border-radius: 20px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(102, 126, 234, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(102, 126, 234, 0.18);
+}
+
+.stat-icon {
+    width: 65px;
+    height: 65px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 6px 18px rgba(102, 126, 234, 0.3);
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #777;
+    font-weight: 500;
+}
+
+/* =========================
+   STREAK CARDS
+========================= */
+.streak-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    margin-bottom: 35px;
+}
+
+.streak-card {
+    border-radius: 24px;
+    padding: 28px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+}
+
+.streak-card::after {
+    content: '';
+    position: absolute;
+    width: 140px;
+    height: 140px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+    top: -40px;
+    right: -40px;
+}
+
+.streak-card:hover {
+    transform: translateY(-5px) scale(1.01);
+}
+
+.streak-card.current {
+    background: linear-gradient(135deg, #ff6b6b, #ff9472);
+}
+
+.streak-card.best {
+    background: linear-gradient(135deg, #f6d365, #fda085);
+}
+
+.streak-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    flex-shrink: 0;
+}
+
+.streak-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.streak-value {
+    font-size: 38px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.streak-label {
+    font-size: 15px;
+    opacity: 0.92;
+    font-weight: 500;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
 @media (max-width: 768px) {
-    .dashboard-content {
-        padding: 0 16px;
-    }
-    
-    .dashboard-header {
-        padding: 24px 16px;
-    }
-    
-    .dashboard-header h1 {
-        font-size: 28px;
-    }
-    
-    .back-button {
-        width: 44px;
-        height: 44px;
-        margin-bottom: 16px;
-    }
-    
-    .back-arrow {
-        font-size: 18px;
-    }
-    
-    .period-tabs {
-        flex-wrap: wrap;
-    }
-    
-    .tab {
-        flex: calc(50% - 6px);
-    }
-    
-    .stats-grid {
+    .stats-cards,
+    .streak-cards {
         grid-template-columns: 1fr;
     }
-    
-    .insights-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .stat-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-    
-    .export-btn {
-        padding: 16px 32px;
-        font-size: 16px;
-    }
-}
 
-@media (max-width: 480px) {
-    .back-button {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .back-arrow {
-        font-size: 16px;
-    }
-    
-    .tab {
-        flex: 100%;
-    }
-    
-    .chart-wrapper {
-        height: 250px;
-    }
-    
-    .chart-container.full-width .chart-wrapper {
-        height: 300px;
-    }
-    
-    .stat-card {
+    .stat-card,
+    .streak-card {
         padding: 20px;
     }
-    
-    .stat-icon {
-        font-size: 36px;
-        width: 56px;
-        height: 56px;
-    }
-    
-    .stat-info h3 {
+
+    .stat-value {
         font-size: 28px;
+    }
+
+    .streak-value {
+        font-size: 32px;
+    }
+}
+
+/* =========================
+   🚀 FIX: INLINE CHART COMBO RULE
+   (Weight + Progress SAME ROW)
+========================= */
+
+/* Делаем специальные контейнеры одинакового веса */
+.chart-container {
+    height: 350px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Внутри график не растягивает блок */
+.chart-wrapper {
+    flex: 1;
+    height: auto;
+}
+
+/* =========================
+   FULL WIDTH (оставляем только для bar chart)
+========================= */
+
+.chart-container.full-width {
+    grid-column: 1 / -1;
+    height: auto;
+    width: 100%;
+}
+
+/* =========================
+   CLEAN EMPTY STATE
+========================= */
+
+.no-data-message {
+    margin-top: 20px;
+
+    padding: 20px;
+
+    border-radius: 16px;
+
+    text-align: center;
+
+    background: rgba(255,255,255,0.02);
+    border: 1px dashed rgba(255,255,255,0.1);
+}
+
+.start-workout-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    padding: 14px 18px;
+    border-radius: 14px;
+
+    border: none;
+    cursor: pointer;
+
+    font-size: 14px;
+    font-weight: 600;
+    color: #0b1220;
+
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+
+    box-shadow:
+        0 10px 25px rgba(34, 197, 94, 0.25),
+        0 4px 10px rgba(0, 0, 0, 0.25);
+
+    transition: all 0.25s ease;
+
+    position: relative;
+    overflow: hidden;
+}
+
+/* glow эффект */
+.start-workout-btn::before {
+    content: "";
+    position: absolute;
+    inset: -40%;
+    background: radial-gradient(circle, rgba(255,255,255,0.35), transparent 60%);
+    transform: translateX(-60%);
+    transition: transform 0.6s ease;
+}
+
+/* hover */
+.start-workout-btn:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow:
+        0 14px 35px rgba(34, 197, 94, 0.35),
+        0 6px 14px rgba(0, 0, 0, 0.3);
+}
+
+.start-workout-btn:hover::before {
+    transform: translateX(60%);
+}
+
+/* active (нажатие) */
+.start-workout-btn:active {
+    transform: translateY(0px) scale(0.98);
+}
+
+/* иконка внутри */
+.start-workout-btn .start-icon {
+    font-size: 16px;
+}
+
+/* =========================
+   LOADING
+========================= */
+
+.spinner {
+    width: 38px;
+    height: 38px;
+
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.08);
+    border-top: 3px solid #22c55e;
+
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+/* =========================
+   STATS CARDS — MOBILE UI
+========================= */
+
+@media (max-width: 768px) {
+
+    .stats-cards {
+        display: grid;
+
+        grid-template-columns: repeat(2, 1fr);
+
+        gap: 14px;
+
+        margin: 24px 0;
+    }
+
+    .stat-card {
+        position: relative;
+
+        min-height: 170px;
+
+        padding: 18px 16px;
+
+        border-radius: 24px;
+
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: space-between;
+
+        overflow: hidden;
+
+        background:
+            linear-gradient(
+                145deg,
+                rgba(17,26,43,0.96),
+                rgba(11,18,32,0.92)
+            );
+
+        border: 1px solid rgba(255,255,255,0.08);
+
+        backdrop-filter: blur(18px);
+
+        box-shadow:
+            0 10px 30px rgba(0,0,0,0.28);
+
+        transition:
+            transform 0.25s ease,
+            border-color 0.25s ease,
+            box-shadow 0.25s ease;
+    }
+
+    .stat-card::before {
+        height: 3px;
+
+        background:
+            linear-gradient(
+                90deg,
+                #22c55e,
+                #3b82f6
+            );
+    }
+
+    .stat-card::after {
+        content: '';
+
+        position: absolute;
+
+        top: -30px;
+        right: -30px;
+
+        width: 100px;
+        height: 100px;
+
+        border-radius: 50%;
+
+        background: rgba(59,130,246,0.08);
+
+        filter: blur(10px);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+
+        border-color: rgba(59,130,246,0.22);
+
+        box-shadow:
+            0 16px 34px rgba(0,0,0,0.35);
+    }
+
+    .stat-icon {
+        width: 58px;
+        height: 58px;
+
+        border-radius: 18px;
+
+        font-size: 26px;
+
+        background:
+            linear-gradient(
+                135deg,
+                #3b82f6,
+                #22c55e
+            );
+
+        box-shadow:
+            0 10px 24px rgba(59,130,246,0.28);
+    }
+
+    .stat-info {
+        width: 100%;
+    }
+
+    .stat-value {
+        margin-top: 14px;
+
+        font-size: 26px;
+        font-weight: 800;
+
+        line-height: 1.1;
+
+        color: #fff;
+    }
+
+    .stat-label {
+        margin-top: 6px;
+
+        font-size: 12px;
+        line-height: 1.5;
+
+        color: rgba(255,255,255,0.65);
+    }
+}
+
+/* =========================
+   EXTRA SMALL DEVICES
+========================= */
+
+@media (max-width: 480px) {
+
+    .stats-cards {
+        gap: 12px;
+    }
+
+    .stat-card {
+        min-height: 155px;
+
+        padding: 16px 14px;
+
+        border-radius: 20px;
+    }
+
+    .stat-icon {
+        width: 52px;
+        height: 52px;
+
+        font-size: 22px;
+    }
+
+    .stat-value {
+        font-size: 22px;
+    }
+
+    .stat-label {
+        font-size: 11px;
+    }
+}/* =========================
+   STREAK CARDS — MOBILE UI
+========================= */
+
+@media (max-width: 768px) {
+
+    .streak-cards {
+        display: grid;
+
+        grid-template-columns: repeat(2, 1fr);
+
+        gap: 14px;
+
+        margin-bottom: 28px;
+    }
+
+    .streak-card {
+        position: relative;
+
+        min-height: 185px;
+
+        padding: 20px 16px;
+
+        border-radius: 26px;
+
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: space-between;
+
+        overflow: hidden;
+
+        box-shadow:
+            0 12px 32px rgba(0,0,0,0.28);
+
+        transition:
+            transform 0.25s ease,
+            box-shadow 0.25s ease,
+            filter 0.25s ease;
+    }
+
+    .streak-card::after {
+        width: 120px;
+        height: 120px;
+
+        top: -35px;
+        right: -35px;
+
+        background: rgba(255,255,255,0.08);
+
+        filter: blur(6px);
+    }
+
+    .streak-card:hover {
+        transform: translateY(-4px);
+
+        box-shadow:
+            0 18px 40px rgba(0,0,0,0.35);
+    }
+
+    .streak-card.current {
+        background:
+            linear-gradient(
+                145deg,
+                #ff6b6b,
+                #ff8e72
+            );
+    }
+
+    .streak-card.best {
+        background:
+            linear-gradient(
+                145deg,
+                #f6d365,
+                #fda085
+            );
+    }
+
+    .streak-icon {
+        width: 60px;
+        height: 60px;
+
+        border-radius: 18px;
+
+        font-size: 28px;
+
+        background: rgba(255,255,255,0.18);
+
+        backdrop-filter: blur(10px);
+
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.12);
+    }
+
+    .streak-info {
+        width: 100%;
+    }
+
+    .streak-value {
+        margin-top: 14px;
+
+        font-size: 30px;
+        font-weight: 900;
+
+        line-height: 1;
+
+        color: #fff;
+    }
+
+    .streak-label {
+        margin-top: 8px;
+
+        font-size: 13px;
+        line-height: 1.5;
+
+        opacity: 0.92;
+    }
+}
+
+/* =========================
+   EXTRA SMALL DEVICES
+========================= */
+
+@media (max-width: 480px) {
+
+    .streak-cards {
+        gap: 12px;
+    }
+
+    .streak-card {
+        min-height: 170px;
+
+        padding: 18px 14px;
+
+        border-radius: 22px;
+    }
+
+    .streak-icon {
+        width: 54px;
+        height: 54px;
+
+        font-size: 24px;
+    }
+
+    .streak-value {
+        font-size: 26px;
+    }
+
+    .streak-label {
+        font-size: 12px;
+    }
+}/* =========================
+   CHART CONTAINER — MOBILE UI
+========================= */
+
+@media (max-width: 768px) {
+
+    .charts-section {
+        gap: 16px;
+    }
+
+    .chart-container {
+        position: relative;
+
+        min-height: 320px;
+
+        padding: 18px 16px;
+
+        border-radius: 24px;
+
+        overflow: hidden;
+
+        background:
+            linear-gradient(
+                145deg,
+                rgba(17,26,43,0.96),
+                rgba(11,18,32,0.92)
+            );
+
+        border: 1px solid rgba(255,255,255,0.08);
+
+        backdrop-filter: blur(18px);
+
+        box-shadow:
+            0 12px 30px rgba(0,0,0,0.28);
+
+        transition:
+            transform 0.25s ease,
+            border-color 0.25s ease,
+            box-shadow 0.25s ease;
+    }
+
+    .chart-container::before {
+        content: '';
+
+        position: absolute;
+        inset: 0;
+
+        background:
+            radial-gradient(
+                circle at top right,
+                rgba(59,130,246,0.10),
+                transparent 45%
+            );
+
+        pointer-events: none;
+    }
+
+    .chart-container:hover {
+        transform: translateY(-4px);
+
+        border-color: rgba(59,130,246,0.22);
+
+        box-shadow:
+            0 18px 38px rgba(0,0,0,0.35);
+    }
+
+    .chart-container h3 {
+        position: relative;
+        z-index: 2;
+
+        margin-bottom: 14px;
+
+        font-size: 15px;
+        font-weight: 700;
+
+        color: #f8fafc;
+
+        letter-spacing: 0.2px;
+    }
+
+    .chart-wrapper {
+        position: relative;
+        z-index: 2;
+
+        flex: 1;
+
+        min-height: 240px;
+    }
+
+    .chart-container.full-width {
+        min-height: 360px;
+
+        border-radius: 26px;
+    }
+}
+
+/* =========================
+   EXTRA SMALL DEVICES
+========================= */
+
+@media (max-width: 480px) {
+
+    .chart-container {
+        min-height: 290px;
+
+        padding: 16px 14px;
+
+        border-radius: 20px;
+    }
+
+    .chart-container h3 {
+        font-size: 14px;
+    }
+
+    .chart-wrapper {
+        min-height: 210px;
+    }
+
+    .chart-container.full-width {
+        min-height: 330px;
+
+        border-radius: 22px;
     }
 }

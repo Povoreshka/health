@@ -1,300 +1,413 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Programs.css';
+import { 
+    muscleGroups, 
+    categories, 
+    intensityColors,
+    exerciseTypes
+} from './programsData';
+
+// API URL
+const API_URL = 'http://localhost:5000/api';
+
+// Маппинг интенсивности из БД в русские названия
+const intensityLabels = {
+    'low': 'Низкая',
+    'medium': 'Средняя',
+    'high': 'Высокая',
+    'very_high': 'Очень высокая',
+    'extreme': 'Экстремальная'
+};
+
+// Маппинг интенсивности в цвета
+const intensityColorMap = {
+    'low': '#4CAF50',
+    'medium': '#FF9800',
+    'high': '#F44336',
+    'very_high': '#9C27B0',
+    'extreme': '#D32F2F'
+};
+
+// Получение цвета интенсивности
+const getIntensityColor = (intensity) => {
+    if (!intensity) return '#FF9800';
+    if (intensityColors && intensityColors[intensity]) {
+        return intensityColors[intensity];
+    }
+    return intensityColorMap[intensity] || '#FF9800';
+};
+
+// Получение текста интенсивности
+const getIntensityLabel = (intensity) => {
+    if (!intensity) return 'Средняя';
+    const russianLabel = intensityLabels[intensity];
+    if (russianLabel) return russianLabel;
+    if (intensityColors && intensityColors[intensity]) return intensity;
+    return intensityLabels[intensity] || intensity;
+};
+
+// Уровни подготовки для фильтрации
+const experienceLevels = [
+    { id: 'all', label: 'Все уровни', icon: '🌟' },
+    { id: 'beginner', label: 'Новичок', icon: '🌱' },
+    { id: 'intermediate', label: 'Продолжающий', icon: '📈' },
+    { id: 'advanced', label: 'Продвинутый', icon: '🔥' },
+    { id: 'professional', label: 'Профессионал', icon: '🏆' }
+];
 
 const Programs = () => {
     const [programs, setPrograms] = useState([]);
+    const [customWorkoutsList, setCustomWorkoutsList] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState('all');
+    const [selectedLevel, setSelectedLevel] = useState('all');
     const [selectedMuscleGroups, setSelectedMuscleGroups] = useState([]);
+    const [exercises, setExercises] = useState([]);
+    const [filteredExercises, setFilteredExercises] = useState([]);
+    const [exercisesLoading, setExercisesLoading] = useState(false);
+    const [exerciseFilters, setExerciseFilters] = useState({
+        muscleGroup: 'all',
+        minDifficulty: 1,
+        maxDifficulty: 10,
+        type: 'all',
+        search: ''
+    });
+    const [customWorkout, setCustomWorkout] = useState({
+        name: '',
+        exercises: [],
+        totalTime: 0,
+        createdAt: null
+    });
+    const [showCustomWorkoutModal, setShowCustomWorkoutModal] = useState(false);
+    const [savingWorkout, setSavingWorkout] = useState(false);
+    
     const navigate = useNavigate();
 
-    const muscleGroups = [
-        { id: 'chest', label: 'Грудь', icon: '💪', color: '#FF6B6B' },
-        { id: 'back', label: 'Спина', icon: '🦸', color: '#4ECDC4' },
-        { id: 'legs', label: 'Ноги', icon: '🦵', color: '#45B7D1' },
-        { id: 'arms', label: 'Руки', icon: '💪', color: '#96CEB4' },
-        { id: 'shoulders', label: 'Плечи', icon: '👨‍🚀', color: '#FFD166' },
-        { id: 'abs', label: 'Пресс', icon: '🏋️', color: '#06D6A0' },
-        { id: 'glutes', label: 'Ягодицы', icon: '🍑', color: '#EF476F' },
-        { id: 'cardio', label: 'Кардио', icon: '🏃', color: '#118AB2' },
-        { id: 'fullbody', label: 'Все тело', icon: '👤', color: '#073B4C' },
-        { id: 'functional', label: 'Функц.', icon: '⚡', color: '#7209B7' },
-        { id: 'flexibility', label: 'Гибкость', icon: '🧘', color: '#F72585' },
-        { id: 'strength', label: 'Сила', icon: '🏋️‍♂️', color: '#3A86FF' }
-    ];
+    // Загрузка упражнений из БД
+    const loadExercises = async () => {
+        setExercisesLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${API_URL}/exercises`);
+            if (!response.ok) throw new Error(`Failed to fetch exercises: ${response.status}`);
+            const data = await response.json();
+            console.log(`Loaded ${data?.length || 0} exercises from database`);
+            
+            if (data && Array.isArray(data)) {
+                const formattedExercises = data.map(ex => ({
+                    id: ex.id,
+                    name: ex.name,
+                    description: ex.description,
+                    primaryMuscle: ex.primary_muscle,
+                    muscleGroups: [ex.primary_muscle],
+                    type: ex.type,
+                    level: ex.level,
+                    difficulty: ex.difficulty || 5,
+                    caloriesPerMinute: ex.calories_per_minute || 5,
+                    gifUrl: ex.gif_url,
+                    equipment: ex.equipment || [],
+                    benefits: ex.benefits || [],
+                    instructions: ex.instructions || [],
+                    tips: ex.tips || [],
+                    commonMistakes: ex.common_mistakes || []
+                }));
+                setExercises(formattedExercises);
+                setFilteredExercises(formattedExercises);
+            } else {
+                setExercises([]);
+                setFilteredExercises([]);
+            }
+        } catch (error) {
+            console.error('Error loading exercises from API:', error);
+            setError('Не удалось загрузить упражнения из базы данных');
+            setExercises([]);
+            setFilteredExercises([]);
+        } finally {
+            setExercisesLoading(false);
+        }
+    };
 
-    useEffect(() => {
-        setTimeout(() => {
-            const mockPrograms = [
-                {
-                    id: 1,
-                    title: 'Ударный режим PRO',
-                    description: '30 дней экстремальных тренировок для максимального прогресса',
-                    duration: '30 дней',
-                    level: 'advanced',
-                    workoutsPerWeek: 6,
-                    icon: '⚡',
-                    color: '#FF6B6B',
-                    intensity: 'Высокая',
-                    active: true,
-                    muscleGroups: ['chest', 'back', 'legs', 'arms', 'shoulders', 'abs'],
-                    rating: 4.8,
-                    participants: 2543
-                },
-                {
-                    id: 2,
-                    title: 'Базовая сила',
-                    description: 'Фундаментальная программа для набора мышечной массы новичкам',
-                    duration: '12 недель',
-                    level: 'beginner',
-                    workoutsPerWeek: 4,
-                    icon: '💪',
-                    color: '#4ECDC4',
-                    intensity: 'Средняя',
-                    active: false,
-                    muscleGroups: ['chest', 'back', 'legs', 'arms'],
-                    rating: 4.6,
-                    participants: 1876
-                },
-                {
-                    id: 3,
-                    title: 'Кардио марафон',
-                    description: 'Интенсивная программа для развития выносливости и сжигания жира',
-                    duration: '8 недель',
-                    level: 'intermediate',
-                    workoutsPerWeek: 5,
-                    icon: '🏃',
-                    color: '#45B7D1',
-                    intensity: 'Высокая',
-                    active: false,
-                    muscleGroups: ['cardio', 'legs', 'fullbody'],
-                    rating: 4.7,
-                    participants: 3210
-                },
-                {
-                    id: 4,
-                    title: 'Йога-трансформация',
-                    description: 'Глубокая работа с телом и сознанием для гармонии и гибкости',
-                    duration: '6 недель',
-                    level: 'beginner',
-                    workoutsPerWeek: 7,
-                    icon: '🧘',
-                    color: '#96CEB4',
-                    intensity: 'Низкая',
-                    active: false,
-                    muscleGroups: ['flexibility', 'fullbody'],
-                    rating: 4.9,
-                    participants: 1890
-                },
-                {
-                    id: 5,
-                    title: 'Женский фитнес',
-                    description: 'Специальная программа для тонуса и формы женского тела',
-                    duration: '10 недель',
-                    level: 'intermediate',
-                    workoutsPerWeek: 5,
-                    icon: '👩',
-                    color: '#FFEAA7',
-                    intensity: 'Средняя',
-                    active: false,
-                    muscleGroups: ['glutes', 'legs', 'abs', 'arms'],
-                    rating: 4.8,
-                    participants: 4321
-                },
-                {
-                    id: 6,
-                    title: 'Силовой пауэрлифтинг',
-                    description: 'Максимальное развитие силы в базовых упражнениях',
-                    duration: '16 недель',
-                    level: 'advanced',
-                    workoutsPerWeek: 4,
-                    icon: '🏋️‍♂️',
-                    color: '#DDA0DD',
-                    intensity: 'Очень высокая',
-                    active: false,
-                    muscleGroups: ['strength', 'legs', 'back', 'chest'],
-                    rating: 4.5,
-                    participants: 987
-                },
-                {
-                    id: 7,
-                    title: 'Функциональный тренинг',
-                    description: 'Развитие функциональной силы для повседневной жизни',
-                    duration: '8 недель',
-                    level: 'intermediate',
-                    workoutsPerWeek: 3,
-                    icon: '⚡',
-                    color: '#FF9A76',
-                    intensity: 'Средняя',
-                    active: false,
-                    muscleGroups: ['functional', 'fullbody', 'strength'],
-                    rating: 4.4,
-                    participants: 1567
-                },
-                {
-                    id: 8,
-                    title: 'Сушка и рельеф',
-                    description: 'Экстремальная программа для достижения спортивной формы',
-                    duration: '6 недель',
-                    level: 'advanced',
-                    workoutsPerWeek: 6,
-                    icon: '🔥',
-                    color: '#3D5A80',
-                    intensity: 'Очень высокая',
-                    active: false,
-                    muscleGroups: ['cardio', 'abs', 'arms', 'chest'],
-                    rating: 4.2,
-                    participants: 2100
-                },
-                {
-                    id: 9,
-                    title: 'Растяжка и мобильность',
-                    description: 'Улучшение гибкости и подвижности суставов',
-                    duration: '4 недели',
-                    level: 'beginner',
-                    workoutsPerWeek: 7,
-                    icon: '✨',
-                    color: '#98C1D9',
-                    intensity: 'Низкая',
-                    active: false,
-                    muscleGroups: ['flexibility', 'fullbody'],
-                    rating: 4.9,
-                    participants: 2789
-                },
-                {
-                    id: 10,
-                    title: 'HIIT интенсив',
-                    description: 'Высокоинтенсивные интервальные тренировки для быстрых результатов',
-                    duration: '5 недель',
-                    level: 'intermediate',
-                    workoutsPerWeek: 4,
-                    icon: '⚡',
-                    color: '#EE6C4D',
-                    intensity: 'Экстремальная',
-                    active: false,
-                    muscleGroups: ['cardio', 'fullbody', 'abs'],
-                    rating: 4.6,
-                    participants: 3456
-                },
-                {
-                    id: 11,
-                    title: 'Бодибилдинг классик',
-                    description: 'Классическая программа для построения гармоничного тела',
-                    duration: '12 недель',
-                    level: 'advanced',
-                    workoutsPerWeek: 5,
-                    icon: '🏆',
-                    color: '#06D6A0',
-                    intensity: 'Высокая',
-                    active: false,
-                    muscleGroups: ['chest', 'back', 'legs', 'arms', 'shoulders', 'abs'],
-                    rating: 4.7,
-                    participants: 1876
-                },
-                {
-                    id: 12,
-                    title: 'Утренняя зарядка+',
-                    description: 'Энергичные утренние тренировки для бодрости на весь день',
-                    duration: '4 недели',
-                    level: 'beginner',
-                    workoutsPerWeek: 7,
-                    icon: '☀️',
-                    color: '#FFD166',
-                    intensity: 'Низкая',
-                    active: false,
-                    muscleGroups: ['fullbody', 'cardio'],
-                    rating: 4.8,
-                    participants: 5123
-                }
+    // Загрузка программ из БД
+    const loadPrograms = async () => {
+        setError(null);
+        try {
+            const response = await fetch(`${API_URL}/programs`);
+            if (!response.ok) throw new Error(`Failed to fetch programs: ${response.status}`);
+            const data = await response.json();
+            
+            console.log(`Loaded ${data?.length || 0} programs from database`);
+            
+            if (!data || !Array.isArray(data)) {
+                console.warn('Invalid programs data received');
+                setPrograms([]);
+                return;
+            }
+            
+            const savedUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+            const savedProgramId = savedUserData.currentProgram?.id;
+            
+            const programsWithActive = data.map(program => ({
+                ...program,
+                active: savedProgramId === program.id
+            }));
+            
+            const sortedPrograms = [
+                ...programsWithActive.filter(p => p.active),
+                ...programsWithActive.filter(p => !p.active).sort((a, b) => (a.id || 0) - (b.id || 0))
             ];
             
-            setPrograms(mockPrograms);
-            setLoading(false);
-        }, 1000);
+            setPrograms(sortedPrograms);
+            
+        } catch (error) {
+            console.error('Error loading programs from API:', error);
+            setError(`Не удалось загрузить программы: ${error.message}`);
+            setPrograms([]);
+        }
+    };
+
+    // Загрузка пользовательских тренировок
+    const loadCustomWorkouts = async () => {
+        const userId = localStorage.getItem('userId');
+        if (!userId) return;
+        
+        try {
+            const response = await fetch(`${API_URL}/custom-workouts/${userId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setCustomWorkoutsList(data);
+                console.log('Loaded custom workouts:', data.length);
+            }
+        } catch (error) {
+            console.error('Error loading custom workouts:', error);
+        }
+    };
+
+    useEffect(() => {
+        const init = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                await Promise.all([loadPrograms(), loadExercises(), loadCustomWorkouts()]);
+            } catch (error) {
+                console.error('Initialization error:', error);
+                setError('Ошибка загрузки данных');
+            } finally {
+                setLoading(false);
+            }
+        };
+        init();
     }, []);
 
-    const categories = [
-        { id: 'all', label: 'Все программы', icon: '🌟' },
-        { id: 'beginner', label: 'Новичкам', icon: '🌱' },
-        { id: 'intermediate', label: 'Продолжающим', icon: '📈' },
-        { id: 'advanced', label: 'Профи', icon: '🔥' }
-    ];
-
-    const intensityColors = {
-        'Низкая': '#4CAF50',
-        'Средняя': '#FF9800',
-        'Высокая': '#F44336',
-        'Очень высокая': '#9C27B0',
-        'Экстремальная': '#D32F2F'
-    };
-
-    const handleMuscleGroupToggle = (groupId) => {
-        setSelectedMuscleGroups(prev => {
-            if (prev.includes(groupId)) {
-                return prev.filter(id => id !== groupId);
-            } else {
-                return [...prev, groupId];
-            }
-        });
-    };
-
-    const filteredPrograms = selectedCategory === 'all' 
-        ? programs 
-        : programs.filter(program => program.level === selectedCategory);
-
-    const filteredByMuscleGroups = selectedMuscleGroups.length > 0
-        ? filteredPrograms.filter(program => 
-            selectedMuscleGroups.some(group => program.muscleGroups.includes(group))
-        )
-        : filteredPrograms;
-
-    const [showMuscleSelection, setShowMuscleSelection] = useState(false);
-    const [selectedProgramId, setSelectedProgramId] = useState(null);
-
-    const handleSelectProgram = (programId) => {
-        const selectedProgram = programs.find(p => p.id === programId);
+    // Фильтрация упражнений
+    useEffect(() => {
+        if (!exercises || exercises.length === 0) return;
         
-        setShowMuscleSelection(true);
-        setSelectedProgramId(programId);
+        let filtered = [...exercises];
         
-        setSelectedMuscleGroups(selectedProgram.muscleGroups);
-    };
-
-    const confirmProgramSelection = () => {
-        if (selectedProgramId) {
-            const updatedPrograms = programs.map(program => ({
-                ...program,
-                active: program.id === selectedProgramId
-            }));
-            setPrograms(updatedPrograms);
-            
-            const selectedProgram = programs.find(p => p.id === selectedProgramId);
-            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-            
-            localStorage.setItem('userData', JSON.stringify({
-                ...userData,
-                currentProgram: {
-                    ...selectedProgram,
-                    selectedMuscleGroups: selectedMuscleGroups
-                }
-            }));
-            
-            alert(`🎉 Вы выбрали программу "${selectedProgram.title}"!`);
-            setShowMuscleSelection(false);
-            setSelectedProgramId(null);
+        if (exerciseFilters.muscleGroup !== 'all') {
+            filtered = filtered.filter(ex => 
+                ex.primaryMuscle === exerciseFilters.muscleGroup || 
+                ex.muscleGroups?.includes(exerciseFilters.muscleGroup)
+            );
         }
+        
+        filtered = filtered.filter(ex => 
+            ex.difficulty >= exerciseFilters.minDifficulty && 
+            ex.difficulty <= exerciseFilters.maxDifficulty
+        );
+        
+        if (exerciseFilters.type !== 'all') {
+            filtered = filtered.filter(ex => ex.type === exerciseFilters.type);
+        }
+        
+        if (exerciseFilters.search) {
+            filtered = filtered.filter(ex => 
+                ex.name.toLowerCase().includes(exerciseFilters.search.toLowerCase())
+            );
+        }
+        
+        setFilteredExercises(filtered);
+    }, [exerciseFilters, exercises]);
+
+    // Подсчет общего времени тренировки
+    useEffect(() => {
+        const totalSeconds = customWorkout.exercises.reduce((total, ex) => {
+            const exerciseTime = (ex.exerciseTime || 45) * (ex.sets || 3);
+            const restTime = (ex.restTime || 60) * ((ex.sets || 3) - 1);
+            return total + exerciseTime + restTime;
+        }, 0);
+        
+        setCustomWorkout(prev => ({
+            ...prev,
+            totalTime: Math.round(totalSeconds / 60)
+        }));
+    }, [customWorkout.exercises]);
+
+    // Функции фильтрации программ
+    const getFilteredByCategory = (category, programsList) => {
+        if (!programsList || !Array.isArray(programsList)) return [];
+        if (category === 'all') return programsList;
+        return programsList.filter(program => 
+            program.level === category || program.category === category
+        );
+    };
+
+    const getFilteredByLevel = (level, programsList) => {
+        if (!programsList || !Array.isArray(programsList)) return [];
+        if (level === 'all') return programsList;
+        return programsList.filter(program => program.level === level);
+    };
+
+    const getFilteredByMuscleGroups = (programsList, groups) => {
+        if (!programsList || !Array.isArray(programsList)) return [];
+        if (groups.length === 0) return programsList;
+        return programsList.filter(program => 
+            groups.some(group => program.muscleGroups?.includes(group))
+        );
+    };
+
+    const filteredByCategory = getFilteredByCategory(selectedCategory, programs);
+    const filteredByLevel = getFilteredByLevel(selectedLevel, filteredByCategory);
+    const filteredPrograms = getFilteredByMuscleGroups(filteredByLevel, selectedMuscleGroups);
+
+    const clearMuscleFilters = () => {
+        setSelectedMuscleGroups([]);
     };
 
     const handleViewDetails = (programId) => {
         navigate(`/programs/${programId}`);
     };
 
-    const clearMuscleFilters = () => {
-        setSelectedMuscleGroups([]);
+    const handleStartCustomWorkout = (workout) => {
+        // Сохраняем информацию о тренировке в localStorage и переходим
+        localStorage.setItem('currentCustomWorkout', JSON.stringify(workout));
+        navigate(`/custom-workout/${workout.id}`);
     };
 
-    if (loading) {
+    // Добавление/удаление упражнения из выбранных
+    const toggleCustomExercise = (exercise) => {
+        setCustomWorkout(prev => {
+            const exists = prev.exercises.find(e => e.id === exercise.id);
+            if (exists) {
+                return {
+                    ...prev,
+                    exercises: prev.exercises.filter(e => e.id !== exercise.id)
+                };
+            } else {
+                return {
+                    ...prev,
+                    exercises: [...prev.exercises, {
+                        ...exercise,
+                        id: exercise.id,
+                        name: exercise.name,
+                        description: exercise.description,
+                        muscleGroup: exercise.primaryMuscle,
+                        gif_url: exercise.gifUrl,
+                        sets: 3,
+                        reps: '10-12',
+                        restTime: 60,
+                        exerciseTime: 45
+                    }]
+                };
+            }
+        });
+    };
+
+    // Обновление параметров упражнения в своей тренировке
+    const updateCustomExerciseParams = (exerciseId, field, value) => {
+        setCustomWorkout(prev => ({
+            ...prev,
+            exercises: prev.exercises.map(ex => 
+                ex.id === exerciseId ? { ...ex, [field]: value } : ex
+            )
+        }));
+    };
+
+    // Сохранение своей тренировки
+    const handleSaveCustomWorkout = async () => {
+        if (!customWorkout.name.trim()) {
+            alert('Пожалуйста, введите название тренировки');
+            return;
+        }
+
+        if (customWorkout.exercises.length === 0) {
+            alert('Добавьте хотя бы одно упражнение');
+            return;
+        }
+
+        setSavingWorkout(true);
+        
+        try {
+            const userId = localStorage.getItem('userId');
+            
+            if (!userId) {
+                alert('Пожалуйста, войдите в аккаунт');
+                setShowCustomWorkoutModal(false);
+                navigate('/onboarding/0');
+                return;
+            }
+            
+            const workoutToSave = {
+                user_id: parseInt(userId),
+                name: customWorkout.name.trim(),
+                exercises: customWorkout.exercises.map(ex => ({
+                    exercise_id: String(ex.id),
+                    gif_url: ex.gif_url,
+                    sets: ex.sets || 3,
+                    reps: ex.reps || '10-12',
+                    rest_time: ex.restTime || 60,
+                    exercise_time: ex.exerciseTime || 45
+                })),
+                total_time: customWorkout.totalTime
+            };
+            
+            console.log('Sending workout to server:', workoutToSave);
+            
+            const response = await fetch(`${API_URL}/custom-workouts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(workoutToSave)
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to save workout');
+            }
+            
+            alert('✅ Тренировка успешно сохранена!');
+            setShowCustomWorkoutModal(false);
+            resetCustomWorkoutForm();
+            loadCustomWorkouts(); // Обновляем список тренировок
+            
+        } catch (error) {
+            console.error('Error saving workout:', error);
+            alert('❌ Ошибка при сохранении тренировки: ' + error.message);
+        } finally {
+            setSavingWorkout(false);
+        }
+    };
+
+    // Сброс формы своей тренировки
+    const resetCustomWorkoutForm = () => {
+        setCustomWorkout({
+            name: '',
+            exercises: [],
+            totalTime: 0,
+            createdAt: null
+        });
+        setExerciseFilters({
+            muscleGroup: 'all',
+            minDifficulty: 1,
+            maxDifficulty: 10,
+            type: 'all',
+            search: ''
+        });
+    };
+
+    if (loading || exercisesLoading) {
         return (
             <div className="programs-loading">
                 <div className="loading-spinner">
@@ -307,350 +420,382 @@ const Programs = () => {
         );
     }
 
+    if (error && programs.length === 0 && exercises.length === 0) {
+        return (
+            <div className="programs-error">
+                <div className="error-icon">⚠️</div>
+                <h2>Ошибка загрузки данных</h2>
+                <p>{error}</p>
+                <button onClick={() => window.location.reload()} className="retry-button">
+                    Попробовать снова
+                </button>
+                <button onClick={() => navigate('/home')} className="back-home-button">
+                    Вернуться на главную
+                </button>
+            </div>
+        );
+    }
+
     return (
         <div className="programs-page">
             <div className="programs-header">
-                <button className="back-button" onClick={() => navigate('/home')}>
-                    <span className="back-arrow">←</span>
-                    <span>Назад</span>
+    <button className="back-button" onClick={() => navigate('/home')}>
+        <span className="back-arrow">←</span>
+    </button>
+
+    <h1>
+        <span className="header-emoji">🎯</span>
+        <span>Программы тренировок</span>
+    </h1>
+
+    <p>
+        Выберите идеальную программу для достижения ваших целей
+    </p>
+</div>
+
+            {/* Кнопка создания своей тренировки */}
+            <div className="custom-workout-btn-container">
+                <button 
+                    className="custom-workout-btn"
+                    onClick={() => setShowCustomWorkoutModal(true)}
+                >
+                    <span className="btn-icon">✏️</span>
+                    <span>Создать свою тренировку</span>
                 </button>
-                <div className="header-content">
-                    <h1>🎯 Программы тренировок</h1>
-                    <p>Выберите идеальную программу для достижения ваших целей</p>
-                </div>
             </div>
 
-            <div className="categories-filter">
-                {categories.map(category => (
-                    <button
-                        key={category.id}
-                        className={`category-btn ${selectedCategory === category.id ? 'active' : ''}`}
-                        onClick={() => setSelectedCategory(category.id)}
-                    >
-                        <span className="category-icon">{category.icon}</span>
-                        <span className="category-label">{category.label}</span>
-                    </button>
-                ))}
-            </div>
-
-            <div className="muscle-groups-section">
-                <div className="section-header">
-                    <h3>🎯 Фокус на группы мышц</h3>
-                    {selectedMuscleGroups.length > 0 && (
-                        <button className="clear-filters" onClick={clearMuscleFilters}>
-                            Очистить фильтры
-                        </button>
-                    )}
-                </div>
-                <div className="muscle-groups-grid">
-                    {muscleGroups.map(group => (
-                        <div
-                            key={group.id}
-                            className={`muscle-group-card ${selectedMuscleGroups.includes(group.id) ? 'selected' : ''}`}
-                            onClick={() => handleMuscleGroupToggle(group.id)}
-                            style={{
-                                '--muscle-color': group.color,
-                                background: selectedMuscleGroups.includes(group.id) 
-                                    ? `linear-gradient(135deg, ${group.color}20, ${group.color}40)`
-                                    : '#f8f9fa'
-                            }}
-                        >
-                            <div 
-                                className="muscle-icon-wrapper"
-                                style={{ 
-                                    backgroundColor: selectedMuscleGroups.includes(group.id) 
-                                        ? group.color 
-                                        : `${group.color}20`
-                                }}
-                            >
-                                <span className="muscle-icon">{group.icon}</span>
-                            </div>
-                            <span className="muscle-label">{group.label}</span>
-                            {selectedMuscleGroups.includes(group.id) && (
-                                <div className="selected-indicator">
-                                    <span className="check-icon">✓</span>
+            {/* Секция Мои тренировки */}
+            {customWorkoutsList.length > 0 && (
+                <div className="custom-workouts-section">
+                    <h2>📝 Мои тренировки</h2>
+                    <div className="programs-grid">
+                        {customWorkoutsList.map((workout, index) => (
+                            <div key={workout.id} className="program-card custom-workout-card">
+                                <div className="program-badge" style={{ backgroundColor: '#FF9800' }}>
+                                    ✏️
                                 </div>
-                            )}
-                        </div>
+                                <div className="program-header">
+                                    <h3>{workout.name}</h3>
+                                    <p className="program-description">
+                                        Пользовательская тренировка • {workout.exercises?.length || 0} упражнений
+                                    </p>
+                                    <div className="program-tags">
+                                        <span className="duration-tag">⏱️ {workout.total_time || 0} мин</span>
+                                        <span className="workouts-tag">
+                                            📅 {new Date(workout.created_at).toLocaleDateString('ru-RU')}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="program-actions">
+                                    <button 
+                                        className="details-btn"
+                                        onClick={() => handleStartCustomWorkout(workout)}
+                                    >
+                                        <span>Начать</span>
+                                        <span className="arrow">→</span>
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Фильтр по уровню подготовки */}
+            <div className="level-filter">
+                <h3>🎯 Уровень подготовки</h3>
+                <div className="level-buttons">
+                    {experienceLevels.map(level => (
+                        <button
+                            key={level.id}
+                            className={`level-btn ${selectedLevel === level.id ? 'active' : ''}`}
+                            onClick={() => setSelectedLevel(level.id)}
+                        >
+                            <span className="level-icon">{level.icon}</span>
+                            <span className="level-label">{level.label}</span>
+                        </button>
                     ))}
                 </div>
             </div>
+
+            
 
             <div className="programs-info-bar">
                 <div className="info-item">
                     <span className="info-icon">📊</span>
                     <span className="info-text">
-                        Найдено программ: <strong>{filteredByMuscleGroups.length}</strong>
+                        Найдено программ: <strong>{filteredPrograms?.length || 0}</strong>
                     </span>
                 </div>
-                <div className="info-item">
-                    <span className="info-icon">👥</span>
-                    <span className="info-text">
-                        Всего участников: <strong>{programs.reduce((sum, p) => sum + p.participants, 0).toLocaleString()}</strong>
-                    </span>
-                </div>
+                {selectedLevel !== 'all' && (
+                    <div className="info-item">
+                        <span className="info-icon">🎯</span>
+                        <span className="info-text">
+                            Уровень: {experienceLevels.find(l => l.id === selectedLevel)?.label}
+                        </span>
+                    </div>
+                )}
             </div>
 
             <div className="programs-grid">
-                {filteredByMuscleGroups.map((program, index) => {
-                    const style = {
-                        borderLeftColor: program.color,
-                        '--index': index,
-                        animationDelay: `${index * 0.05}s`
-                    };
-                    
-                    return (
-                        <div 
-                            key={program.id} 
-                            className={`program-card ${program.active ? 'active' : ''}`}
-                            style={style}
-                        >
-                            <div className="program-badge" style={{ backgroundColor: program.color }}>
-                                {program.icon}
-                            </div>
-                            
-                            <div className="program-header">
-                                <div className="program-title-section">
-                                    <h3>{program.title}</h3>
-                                    <div className="program-rating">
-                                        <span className="stars">{"★".repeat(Math.floor(program.rating))}</span>
-                                        <span className="rating-value">{program.rating}</span>
-                                        <span className="participants">({program.participants})</span>
-                                    </div>
-                                </div>
-                                
-                                <div className="program-description">
-                                    {program.description}
-                                </div>
-                                
-                                <div className="program-tags">
-                                    <span 
-                                        className="intensity-tag"
-                                        style={{ backgroundColor: intensityColors[program.intensity] }}
-                                    >
-                                        {program.intensity}
-                                    </span>
-                                    <span className="duration-tag">
-                                        ⏱️ {program.duration}
-                                    </span>
-                                    <span className="workouts-tag">
-                                        💪 {program.workoutsPerWeek}/нед
-                                    </span>
-                                </div>
-                                
-                                <div className="program-muscle-preview">
-                                    <div className="muscle-preview-icons">
-                                        {program.muscleGroups.slice(0, 5).map(muscleId => {
-                                            const muscle = muscleGroups.find(m => m.id === muscleId);
-                                            return muscle ? (
-                                                <div 
-                                                    key={muscleId} 
-                                                    className="muscle-preview-icon"
-                                                    title={muscle.label}
-                                                    style={{ backgroundColor: muscle.color }}
-                                                >
-                                                    {muscle.icon}
-                                                </div>
-                                            ) : null;
-                                        })}
-                                        {program.muscleGroups.length > 5 && (
-                                            <div className="muscle-preview-more">
-                                                +{program.muscleGroups.length - 5}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div className="program-actions">
-                                <button 
-                                    className={`select-btn ${program.active ? 'active' : ''}`}
-                                    onClick={() => handleSelectProgram(program.id)}
-                                >
-                                    {program.active ? (
-                                        <>
-                                            <span className="check-icon">✓</span>
-                                            <span>Выбрана</span>
-                                        </>
-                                    ) : 'Выбрать программу'}
-                                </button>
-                                <button 
-                                    className="details-btn"
-                                    onClick={() => handleViewDetails(program.id)}
-                                >
-                                    <span>Подробнее</span>
-                                    <span className="arrow">→</span>
-                                </button>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {showMuscleSelection && (
-                <div className="muscle-selection-modal">
-                    <div className="modal-overlay" onClick={() => setShowMuscleSelection(false)}></div>
-                    <div className="modal-content">
-                        <div className="modal-header">
-                            <div className="modal-title">
-                                <h3>🎯 Выбор фокуса</h3>
-                                <p>Выберите группы мышц для акцента в программе</p>
-                            </div>
-                            <button className="close-modal" onClick={() => setShowMuscleSelection(false)}>×</button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="muscle-selection-grid">
-                                {muscleGroups.map(group => (
-                                    <div 
-                                        key={group.id}
-                                        className={`muscle-selection-item ${selectedMuscleGroups.includes(group.id) ? 'selected' : ''}`}
-                                        onClick={() => handleMuscleGroupToggle(group.id)}
-                                        style={{
-                                            '--muscle-color': group.color,
-                                            background: selectedMuscleGroups.includes(group.id) 
-                                                ? `linear-gradient(135deg, ${group.color}20, ${group.color}40)`
-                                                : '#f8f9fa'
-                                        }}
-                                    >
-                                        <div 
-                                            className="selection-icon"
-                                            style={{ 
-                                                backgroundColor: selectedMuscleGroups.includes(group.id) 
-                                                    ? group.color 
-                                                    : `${group.color}20`,
-                                                color: selectedMuscleGroups.includes(group.id) ? 'white' : group.color
-                                            }}
-                                        >
-                                            {group.icon}
-                                        </div>
-                                        <span className="selection-label">{group.label}</span>
-                                        {selectedMuscleGroups.includes(group.id) && (
-                                            <div className="selection-check">
-                                                <div className="check-circle">
-                                                    <span>✓</span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                            
-                            <div className="selection-summary">
-                                <h4>Вы выбрали: {selectedMuscleGroups.length} групп мышц</h4>
-                                <div className="selected-groups-list">
-                                    {selectedMuscleGroups.map(groupId => {
-                                        const group = muscleGroups.find(m => m.id === groupId);
-                                        return group ? (
-                                            <span key={groupId} className="selected-group-tag">
-                                                <span className="tag-icon">{group.icon}</span>
-                                                {group.label}
-                                            </span>
-                                        ) : null;
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="modal-actions">
-                            <button 
-                                className="cancel-btn"
-                                onClick={() => setShowMuscleSelection(false)}
+                {filteredPrograms && filteredPrograms.length > 0 ? (
+                    filteredPrograms.map((program, index) => {
+                        const programColor = program.color || '#4ECDC4';
+                        const programIntensity = program.intensity || 'medium';
+                        const intensityLabel = getIntensityLabel(programIntensity);
+                        const intensityColor = getIntensityColor(programIntensity);
+                        
+                        const levelLabel = {
+                            'beginner': '🌱 Новичок',
+                            'intermediate': '📈 Продолжающий',
+                            'advanced': '🔥 Продвинутый',
+                            'professional': '🏆 Профессионал'
+                        }[program.level] || program.level;
+                        
+                        const style = {
+                            borderLeftColor: programColor,
+                            '--index': index,
+                            animationDelay: `${index * 0.05}s`
+                        };
+                        
+                        return (
+                            <div 
+                                key={program.id || index} 
+                                className={`program-card ${program.active ? 'active' : ''}`}
+                                style={style}
                             >
-                                Отмена
-                            </button>
-                            <button 
-                                className="confirm-btn"
-                                onClick={confirmProgramSelection}
-                                disabled={selectedMuscleGroups.length === 0}
-                            >
-                                <span>Подтвердить выбор</span>
-                                <span className="btn-icon">🎯</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {filteredByMuscleGroups.length === 0 && (
-                <div className="no-results">
-                    <div className="no-results-icon">🤔</div>
-                    <h3>Программы не найдены</h3>
-                    <p>Попробуйте изменить фильтры или выбрать другие группы мышц</p>
-                    <button className="reset-filters" onClick={clearMuscleFilters}>
-                        Сбросить все фильтры
-                    </button>
-                </div>
-            )}
-
-            <div className="current-program-section">
-                <div className="section-title">
-                    <h2>⭐ Текущая программа</h2>
-                    <div className="section-decoration"></div>
-                </div>
-                {programs.filter(p => p.active).length > 0 ? (
-                    programs
-                        .filter(p => p.active)
-                        .map(activeProgram => (
-                            <div key={activeProgram.id} className="current-program-card">
-                                <div className="current-program-banner">
-                                    <div className="banner-icon">{activeProgram.icon}</div>
-                                    <div className="banner-content">
-                                        <h3>{activeProgram.title}</h3>
-                                        <p>{activeProgram.description}</p>
-                                    </div>
-                                    <div className="active-badge">АКТИВНА</div>
+                                <div className="program-badge" style={{ backgroundColor: programColor }}>
+                                    {program.icon || '💪'}
                                 </div>
-                                <div className="program-progress">
-                                    <div className="progress-header">
-                                        <span>Прогресс</span>
-                                        <span>45%</span>
+                                
+                                <div className="program-header">
+                                    <div className="program-title-section">
+                                        <h3>{program.title}</h3>
+                                        <div className="program-level-badge">
+                                            {levelLabel}
+                                        </div>
                                     </div>
-                                    <div className="progress-bar">
-                                        <div 
-                                            className="progress-fill"
-                                            style={{ 
-                                                width: '45%',
-                                                background: `linear-gradient(90deg, ${activeProgram.color}, ${activeProgram.color}dd)`
-                                            }}
+                                    
+                                    <div className="program-description">
+                                        {program.description}
+                                    </div>
+                                    
+                                    <div className="program-tags">
+                                        <span 
+                                            className="intensity-tag"
+                                            style={{ backgroundColor: intensityColor }}
                                         >
-                                            <div className="progress-glow"></div>
-                                        </div>
+                                            {intensityLabel}
+                                        </span>
+                                        <span className="duration-tag">
+                                            ⏱️ {program.duration || '4 недели'}
+                                        </span>
+                                        <span className="workouts-tag">
+                                            💪 {program.workoutsPerWeek || 3}/нед
+                                        </span>
                                     </div>
-                                    <div className="progress-info">
-                                        <div className="progress-item">
-                                            <span className="progress-label">Завершено:</span>
-                                            <span className="progress-value">13 дней</span>
-                                        </div>
-                                        <div className="progress-item">
-                                            <span className="progress-label">Осталось:</span>
-                                            <span className="progress-value">17 дней</span>
-                                        </div>
-                                        <div className="progress-item">
-                                            <span className="progress-label">Интенсивность:</span>
-                                            <span 
-                                                className="progress-value intensity"
-                                                style={{ color: intensityColors[activeProgram.intensity] }}
-                                            >
-                                                {activeProgram.intensity}
-                                            </span>
-                                        </div>
-                                    </div>
+                                </div>
+                                
+                                <div className="program-actions">
+                                    <button 
+                                        className="details-btn"
+                                        onClick={() => handleViewDetails(program.id)}
+                                    >
+                                        <span>Подробнее</span>
+                                        <span className="arrow">→</span>
+                                    </button>
                                 </div>
                             </div>
-                        ))
+                        );
+                    })
                 ) : (
-                    <div className="no-program-selected">
-                        <div className="no-program-icon">🎯</div>
-                        <div className="no-program-content">
-                            <h3>Вы еще не выбрали программу</h3>
-                            <p>Начните свой путь к идеальной форме прямо сейчас!</p>
-                        </div>
-                        <button className="select-program-btn" onClick={() => setSelectedCategory('all')}>
-                            <span>Выбрать программу</span>
-                            <span className="btn-icon">→</span>
+                    <div className="no-results">
+                        <div className="no-results-icon">🤔</div>
+                        <h3>Программы не найдены</h3>
+                        <p>Попробуйте изменить фильтры или выбрать другой уровень</p>
+                        <button className="reset-filters" onClick={() => {
+                            setSelectedLevel('all');
+                            setSelectedCategory('all');
+                            clearMuscleFilters();
+                        }}>
+                            Сбросить все фильтры
                         </button>
                     </div>
                 )}
             </div>
+
+            {/* Модальное окно создания своей тренировки */}
+            {showCustomWorkoutModal && (
+                <div className="modal-overlay" onClick={() => setShowCustomWorkoutModal(false)}>
+                    <div className="modal-content large" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>✏️ Создание своей тренировки</h2>
+                            <button className="close-modal" onClick={() => setShowCustomWorkoutModal(false)}>×</button>
+                        </div>
+
+                        <div className="modal-body">
+                            <div className="workout-name-section">
+                                <label>Название тренировки *</label>
+                                <input
+                                    type="text"
+                                    value={customWorkout.name}
+                                    onChange={(e) => setCustomWorkout({...customWorkout, name: e.target.value})}
+                                    placeholder="Например: Моя утренняя тренировка"
+                                    className="workout-name-input"
+                                />
+                            </div>
+
+                            <div className="exercise-filters">
+                                <h3>Фильтры упражнений</h3>
+                                <div className="filters-row">
+                                    <div className="filter-group">
+                                        <label>Группа мышц</label>
+                                        <select
+                                            value={exerciseFilters.muscleGroup}
+                                            onChange={(e) => setExerciseFilters({...exerciseFilters, muscleGroup: e.target.value})}
+                                        >
+                                            <option value="all">Все группы</option>
+                                            {muscleGroups && muscleGroups.map(group => (
+                                                <option key={group.id} value={group.id}>{group.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="filter-group">
+                                        <label>Тип упражнения</label>
+                                        <select
+                                            value={exerciseFilters.type}
+                                            onChange={(e) => setExerciseFilters({...exerciseFilters, type: e.target.value})}
+                                        >
+                                            <option value="all">Все типы</option>
+                                            {exerciseTypes && Object.entries(exerciseTypes).map(([key, value]) => (
+                                                <option key={key} value={value}>{value}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="filter-group">
+                                        <label>Поиск</label>
+                                        <input
+                                            type="text"
+                                            value={exerciseFilters.search}
+                                            onChange={(e) => setExerciseFilters({...exerciseFilters, search: e.target.value})}
+                                            placeholder="Введите название..."
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="exercises-list">
+                                <h3>Доступные упражнения ({filteredExercises.length})</h3>
+                                <div className="exercises-grid-custom">
+                                    {filteredExercises.map(exercise => (
+                                        <div
+                                            key={exercise.id}
+                                            className={`exercise-item ${customWorkout.exercises.find(e => e.id === exercise.id) ? 'selected' : ''}`}
+                                            onClick={() => toggleCustomExercise(exercise)}
+                                        >
+                                            <div className="exercise-info-custom">
+                                                <h4>{exercise.name}</h4>
+                                                <p>{exercise.description?.substring(0, 80)}...</p>
+                                                <div className="exercise-meta">
+                                                    <span>💪 {muscleGroups?.find(m => m.id === exercise.primaryMuscle)?.label || exercise.primaryMuscle}</span>
+                                                    <span>⚡ {exercise.caloriesPerMinute} ккал/мин</span>
+                                                    <span className={`difficulty-${exercise.difficulty}`}>
+                                                        🎯 Сложность: {exercise.difficulty}/10
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {customWorkout.exercises.length > 0 && (
+                                <div className="selected-exercises">
+                                    <h3>Ваша тренировка ({customWorkout.exercises.length} упражнений)</h3>
+                                    <div className="selected-exercises-list">
+                                        {customWorkout.exercises.map((exercise, idx) => (
+                                            <div key={exercise.id} className="selected-exercise-item">
+                                                <div className="exercise-order">{idx + 1}</div>
+                                                <div className="exercise-details">
+                                                    <h4>{exercise.name}</h4>
+                                                    <div className="exercise-params">
+                                                        <div className="param">
+                                                            <label>Подходы</label>
+                                                            <input
+                                                                type="number"
+                                                                min="1"
+                                                                max="10"
+                                                                value={exercise.sets}
+                                                                onChange={(e) => updateCustomExerciseParams(exercise.id, 'sets', parseInt(e.target.value))}
+                                                            />
+                                                        </div>
+                                                        <div className="param">
+                                                            <label>Повторения</label>
+                                                            <input
+                                                                type="text"
+                                                                value={exercise.reps}
+                                                                onChange={(e) => updateCustomExerciseParams(exercise.id, 'reps', e.target.value)}
+                                                                placeholder="10-12"
+                                                            />
+                                                        </div>
+                                                        <div className="param">
+                                                            <label>Время (сек)</label>
+                                                            <input
+                                                                type="number"
+                                                                min="10"
+                                                                max="300"
+                                                                value={exercise.exerciseTime}
+                                                                onChange={(e) => updateCustomExerciseParams(exercise.id, 'exerciseTime', parseInt(e.target.value))}
+                                                            />
+                                                        </div>
+                                                        <div className="param">
+                                                            <label>Отдых (сек)</label>
+                                                            <input
+                                                                type="number"
+                                                                min="10"
+                                                                max="300"
+                                                                value={exercise.restTime}
+                                                                onChange={(e) => updateCustomExerciseParams(exercise.id, 'restTime', parseInt(e.target.value))}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    className="remove-exercise"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleCustomExercise(exercise);
+                                                    }}
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="workout-total-time">
+                                        ⏱️ Общее время тренировки: ~{customWorkout.totalTime} минут
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="modal-actions">
+                            <button className="cancel-btn" onClick={() => setShowCustomWorkoutModal(false)}>
+                                Отмена
+                            </button>
+                            <button 
+                                className="save-btn" 
+                                onClick={handleSaveCustomWorkout}
+                                disabled={savingWorkout || !customWorkout.name.trim() || customWorkout.exercises.length === 0}
+                            >
+                                {savingWorkout ? 'Сохранение...' : '💾 Сохранить тренировку'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

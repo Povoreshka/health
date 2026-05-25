@@ -1,63 +1,485 @@
-import React, { useState, useEffect } from 'react';
+// src/pages/Dashboard.jsx
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 
-// Импортируем компоненты графиков
 import {
     LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
+const API_URL = 'http://localhost:5000/api';
+
 const Dashboard = () => {
-    const [userData, setUserData] = useState(null);
     const [activeTab, setActiveTab] = useState('weekly');
+    const [weeklyData, setWeeklyData] = useState([]);
+    const [monthlyData, setMonthlyData] = useState([]);
+    const [quarterlyData, setQuarterlyData] = useState([]);
+    const [yearlyData, setYearlyData] = useState([]);
+    const [workoutDistribution, setWorkoutDistribution] = useState([]);
+    const [weightProgress, setWeightProgress] = useState([]);
+    const [streakData, setStreakData] = useState({ currentStreak: 0, bestStreak: 0 });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [totalStats, setTotalStats] = useState({
+        totalWorkouts: 0,
+        totalCalories: 0,
+        totalMinutes: 0,
+        avgDuration: 0
+    });
+    
     const navigate = useNavigate();
+    const userId = localStorage.getItem('userId') || '1';
+    const isMounted = useRef(true);
+    const isLoadingRef = useRef(false);
 
-    // Пример данных для графиков
-    const weeklyData = [
-        { day: 'Пн', калории: 420, время: 45, пульс: 128 },
-        { day: 'Вт', калории: 520, время: 60, пульс: 135 },
-        { day: 'Ср', калории: 480, время: 50, пульс: 130 },
-        { day: 'Чт', калории: 580, время: 65, пульс: 140 },
-        { day: 'Пт', калории: 450, время: 48, пульс: 132 },
-        { day: 'Сб', калории: 620, время: 70, пульс: 142 },
-        { day: 'Вс', калории: 380, время: 40, пульс: 125 },
-    ];
+    // Функция для расчета калорий на основе типа тренировки и длительности
+    const calculateCalories = useCallback((workoutType, durationMinutes) => {
+        const caloriesPerMinute = {
+            'strength': 6,
+            'cardio': 8,
+            'hiit': 10,
+            'yoga': 4,
+            'flexibility': 3,
+            'recovery': 3,
+            'stretching': 3,
+            'default': 5
+        };
+        
+        let normalizedType = (workoutType || '').toLowerCase();
+        if (normalizedType.includes('сил')) normalizedType = 'strength';
+        else if (normalizedType.includes('кард')) normalizedType = 'cardio';
+        else if (normalizedType.includes('hiit')) normalizedType = 'hiit';
+        else if (normalizedType.includes('йог')) normalizedType = 'yoga';
+        else if (normalizedType.includes('растяж')) normalizedType = 'flexibility';
+        else if (normalizedType.includes('восст')) normalizedType = 'recovery';
+        
+        const rate = caloriesPerMinute[normalizedType] || caloriesPerMinute.default;
+        return Math.round(durationMinutes * rate);
+    }, []);
 
-    const monthlyData = [
-        { week: 'Неделя 1', тренировки: 3, калории: 2500, время: 180 },
-        { week: 'Неделя 2', тренировки: 4, калории: 3200, время: 240 },
-        { week: 'Неделя 3', тренировки: 5, калории: 4000, время: 300 },
-        { week: 'Неделя 4', тренировки: 4, калории: 3500, время: 260 },
-    ];
-
-    const workoutDistribution = [
-        { name: 'Силовые', value: 40, color: '#FF6B6B' },
-        { name: 'Кардио', value: 30, color: '#4ECDC4' },
-        { name: 'HIIT', value: 20, color: '#96CEB4' },
-        { name: 'Йога', value: 10, color: '#FFEAA7' },
-    ];
-
-    useEffect(() => {
-        const data = JSON.parse(localStorage.getItem('userData') || '{}');
-        if (data && data.name) {
-            setUserData(data);
-        } else {
-            navigate('/');
+    // Загрузка данных из localStorage и API
+    const loadDashboardData = useCallback(async () => {
+        if (isLoadingRef.current) return;
+        isLoadingRef.current = true;
+        
+        try {
+            if (isMounted.current) setLoading(true);
+            
+            let allWorkouts = [];
+            
+            // 1. Загружаем из localStorage (локальные тренировки)
+            const localHistory = JSON.parse(localStorage.getItem('localWorkoutHistory') || '[]');
+            if (localHistory.length > 0 && isMounted.current) {
+                console.log('Loaded from localStorage:', localHistory.length, 'workouts');
+                const localWithCalories = localHistory.map(workout => {
+                    const durationMinutes = Math.floor((workout.duration || 0) / 60);
+                    const calories = workout.calories_burned || calculateCalories(workout.type, durationMinutes);
+                    return {
+                        ...workout,
+                        calories_burned: calories
+                    };
+                });
+                allWorkouts.push(...localWithCalories);
+            }
+            
+            // 2. Загружаем из API
+            try {
+                const response = await fetch(`${API_URL}/workouts/history/${userId}`);
+                if (response.ok && isMounted.current) {
+                    const apiWorkouts = await response.json();
+                    console.log('Loaded from API:', apiWorkouts.length, 'workouts');
+                    console.log('API workouts details:', apiWorkouts.map(w => ({ type: w.workout_type, name: w.workout_name })));
+                    
+                    const apiWithCalories = apiWorkouts.map(workout => {
+                        const durationMinutes = Math.floor((workout.duration || 0) / 60);
+                        const workoutType = workout.workout_type || workout.type || 'strength';
+                        const calories = workout.calories_burned || calculateCalories(workoutType, durationMinutes);
+                        return {
+                            ...workout,
+                            workout_type: workoutType,
+                            type: workoutType,
+                            calories_burned: calories
+                        };
+                    });
+                    allWorkouts.push(...apiWithCalories);
+                }
+            } catch (err) {
+                console.error('Error loading from API:', err);
+            }
+            
+            // 3. Удаляем дубликаты по дате
+            const uniqueWorkouts = [];
+            const seenDates = new Set();
+            for (const workout of allWorkouts) {
+                const workoutDate = workout.date ? workout.date.split('T')[0] : null;
+                if (workoutDate && !seenDates.has(workoutDate)) {
+                    seenDates.add(workoutDate);
+                    uniqueWorkouts.push(workout);
+                }
+            }
+            
+            // Сортируем по дате (от старых к новым)
+            const sortedWorkouts = uniqueWorkouts.sort((a, b) => {
+                if (!a.date || !b.date) return 0;
+                return new Date(a.date) - new Date(b.date);
+            });
+            
+            console.log('Total unique workouts:', sortedWorkouts.length);
+            console.log('Workouts with types:', sortedWorkouts.map(w => ({ type: w.type || w.workout_type, name: w.workout_name })));
+            
+            // Загружаем записи здоровья
+            let healthEntries = [];
+            try {
+                const healthResponse = await fetch(`${API_URL}/health/${userId}`);
+                if (healthResponse.ok && isMounted.current) {
+                    healthEntries = await healthResponse.json();
+                    console.log('Health entries loaded:', healthEntries.length);
+                }
+            } catch (err) {
+                console.error('Error loading health entries:', err);
+            }
+            
+            if (isMounted.current) {
+                processAllData(sortedWorkouts, healthEntries);
+            }
+            
+        } catch (err) {
+            console.error('Error loading dashboard data:', err);
+            if (isMounted.current) setError(err.message);
+        } finally {
+            isLoadingRef.current = false;
+            if (isMounted.current) setLoading(false);
         }
-    }, [navigate]);
+    }, [userId, calculateCalories]);
 
-    const stats = {
-        totalWorkouts: 42,
-        totalCalories: '15,840',
-        totalTime: '62ч 30м',
-        streak: 15,
-        avgHeartRate: 132,
-        avgWorkoutTime: 58,
-        consistency: 85,
+    const processAllData = useCallback((history, healthEntries) => {
+        calculateTotalStatistics(history);
+        calculateStreak(history);
+        processWeeklyData(history);
+        processMonthlyData(history);
+        processQuarterlyData(history);
+        processYearlyData(history);
+        processWorkoutDistribution(history);
+        processWeightProgress(healthEntries);
+    }, []);
+
+    const calculateTotalStatistics = useCallback((history) => {
+        const totalWorkouts = history.length;
+        const totalCalories = history.reduce((sum, w) => sum + (w.calories_burned || 0), 0);
+        const totalMinutes = Math.floor(history.reduce((sum, w) => sum + (w.duration || 0), 0) / 60);
+        const avgDuration = totalWorkouts > 0 ? Math.round(totalMinutes / totalWorkouts) : 0;
+        
+        setTotalStats({
+            totalWorkouts,
+            totalCalories,
+            totalMinutes,
+            avgDuration
+        });
+    }, []);
+
+    const calculateStreak = useCallback((history) => {
+        if (history.length === 0) {
+            setStreakData({ currentStreak: 0, bestStreak: 0 });
+            return;
+        }
+        
+        const workoutDates = history
+            .map(w => w.date ? w.date.split('T')[0] : null)
+            .filter(d => d)
+            .sort();
+        const uniqueDates = [...new Set(workoutDates)];
+        
+        let currentStreak = 0;
+        let bestStreak = 0;
+        let streak = 0;
+        
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        
+        const hasToday = uniqueDates.includes(today);
+        const hasYesterday = uniqueDates.includes(yesterdayStr);
+        
+        if (hasToday || hasYesterday) {
+            let checkDate = new Date();
+            if (!hasToday) {
+                checkDate.setDate(checkDate.getDate() - 1);
+            }
+            
+            while (true) {
+                const dateStr = checkDate.toISOString().split('T')[0];
+                if (uniqueDates.includes(dateStr)) {
+                    currentStreak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+        }
+        
+        for (let i = 0; i < uniqueDates.length; i++) {
+            if (i > 0) {
+                const prevDate = new Date(uniqueDates[i - 1]);
+                const currDate = new Date(uniqueDates[i]);
+                const diffDays = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24));
+                
+                if (diffDays === 1) {
+                    streak++;
+                } else {
+                    bestStreak = Math.max(bestStreak, streak + 1);
+                    streak = 0;
+                }
+            }
+        }
+        bestStreak = Math.max(bestStreak, streak + 1);
+        
+        setStreakData({ currentStreak, bestStreak });
+    }, []);
+
+    const processWeeklyData = useCallback((history) => {
+        const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+        const today = new Date();
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        
+        const weekly = weekDays.map((day, index) => {
+            const dayWorkouts = history.filter(w => {
+                if (!w.date) return false;
+                const workoutDate = new Date(w.date);
+                const dayOfWeek = (workoutDate.getDay() + 6) % 7;
+                return dayOfWeek === index && workoutDate >= weekAgo;
+            });
+            
+            return {
+                day: day,
+                тренировки: dayWorkouts.length,
+                калории: dayWorkouts.reduce((sum, w) => sum + (w.calories_burned || 0), 0),
+                время: Math.floor(dayWorkouts.reduce((sum, w) => sum + (w.duration || 0), 0) / 60)
+            };
+        });
+        
+        setWeeklyData(weekly);
+    }, []);
+
+    const processMonthlyData = useCallback((history) => {
+        if (history.length === 0) {
+            setMonthlyData([
+                { week: '1-7 день', тренировки: 0, калории: 0, время: 0 },
+                { week: '8-14 день', тренировки: 0, калории: 0, время: 0 },
+                { week: '15-21 день', тренировки: 0, калории: 0, время: 0 },
+                { week: '22-31 день', тренировки: 0, калории: 0, время: 0 }
+            ]);
+            return;
+        }
+        
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth();
+        const currentYear = currentDate.getFullYear();
+        
+        const monthWorkouts = history.filter(w => {
+            if (!w.date) return false;
+            const workoutDate = new Date(w.date);
+            return workoutDate.getMonth() === currentMonth && workoutDate.getFullYear() === currentYear;
+        });
+        
+        const weekly = [
+            { week: '1-7 день', тренировки: 0, калории: 0, время: 0 },
+            { week: '8-14 день', тренировки: 0, калории: 0, время: 0 },
+            { week: '15-21 день', тренировки: 0, калории: 0, время: 0 },
+            { week: '22-31 день', тренировки: 0, калории: 0, время: 0 }
+        ];
+        
+        monthWorkouts.forEach(w => {
+            const day = new Date(w.date).getDate();
+            let weekIndex = 0;
+            if (day <= 7) weekIndex = 0;
+            else if (day <= 14) weekIndex = 1;
+            else if (day <= 21) weekIndex = 2;
+            else weekIndex = 3;
+            
+            weekly[weekIndex].тренировки++;
+            weekly[weekIndex].калории += (w.calories_burned || 0);
+            weekly[weekIndex].время += Math.floor((w.duration || 0) / 60);
+        });
+        
+        setMonthlyData(weekly);
+    }, []);
+
+    const processQuarterlyData = useCallback((history) => {
+        const months = ['Январь', 'Февраль', 'Март'];
+        const currentYear = new Date().getFullYear();
+        
+        const quarterly = months.map((month, index) => {
+            const monthWorkouts = history.filter(w => {
+                if (!w.date) return false;
+                const workoutDate = new Date(w.date);
+                return workoutDate.getMonth() === index && workoutDate.getFullYear() === currentYear;
+            });
+            
+            return {
+                month: month,
+                тренировки: monthWorkouts.length,
+                калории: monthWorkouts.reduce((sum, w) => sum + (w.calories_burned || 0), 0),
+                время: Math.floor(monthWorkouts.reduce((sum, w) => sum + (w.duration || 0), 0) / 60)
+            };
+        });
+        
+        setQuarterlyData(quarterly);
+    }, []);
+
+    const processYearlyData = useCallback((history) => {
+        const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+        const currentYear = new Date().getFullYear();
+        
+        const yearly = months.map((month, index) => {
+            const monthWorkouts = history.filter(w => {
+                if (!w.date) return false;
+                const workoutDate = new Date(w.date);
+                return workoutDate.getMonth() === index && workoutDate.getFullYear() === currentYear;
+            });
+            
+            return {
+                month: month,
+                тренировки: monthWorkouts.length,
+                калории: monthWorkouts.reduce((sum, w) => sum + (w.calories_burned || 0), 0),
+                время: Math.floor(monthWorkouts.reduce((sum, w) => sum + (w.duration || 0), 0) / 60)
+            };
+        });
+        
+        setYearlyData(yearly);
+    }, []);
+
+    // ИСПРАВЛЕННАЯ функция распределения тренировок по типам
+    const processWorkoutDistribution = useCallback((history) => {
+        console.log('=== processWorkoutDistribution ===');
+        console.log('History length:', history.length);
+        
+        if (history.length === 0) {
+            setWorkoutDistribution([
+                { name: 'Нет данных', value: 100, color: '#e0e0e0' }
+            ]);
+            return;
+        }
+        
+        const types = {};
+        
+        history.forEach((workout, index) => {
+            // Получаем тип тренировки из разных возможных полей
+            let type = workout.workout_type || workout.type || workout.workoutType || 'strength';
+            
+            // Приводим к строке и нижнему регистру
+            let typeStr = String(type).toLowerCase().trim();
+            
+            console.log(`Workout ${index + 1}: type="${typeStr}", name="${workout.workout_name || workout.name}"`);
+            
+            // Нормализация типов
+            if (typeStr === 'strength' || typeStr === 'силовая' || typeStr === 'силовые' || typeStr === 'силовая тренировка' || typeStr === 'силовая тренировка') {
+                types['Силовые'] = (types['Силовые'] || 0) + 1;
+            }
+            else if (typeStr === 'cardio' || typeStr === 'кардио' || typeStr === 'кардиотренировка') {
+                types['Кардио'] = (types['Кардио'] || 0) + 1;
+            }
+            else if (typeStr === 'hiit') {
+                types['HIIT'] = (types['HIIT'] || 0) + 1;
+            }
+            else if (typeStr === 'yoga' || typeStr === 'йога') {
+                types['Йога'] = (types['Йога'] || 0) + 1;
+            }
+            else if (typeStr === 'flexibility' || typeStr === 'растяжка' || typeStr === 'stretching') {
+                types['Растяжка'] = (types['Растяжка'] || 0) + 1;
+            }
+            else if (typeStr === 'recovery' || typeStr === 'восстановление') {
+                types['Восстановление'] = (types['Восстановление'] || 0) + 1;
+            }
+            else {
+                // По умолчанию считаем силовыми
+                console.log(`Unknown type "${typeStr}", defaulting to Силовые`);
+                types['Силовые'] = (types['Силовые'] || 0) + 1;
+            }
+        });
+        
+        const typeColors = {
+            'Силовые': '#FF6B6B',
+            'Кардио': '#4ECDC4',
+            'HIIT': '#96CEB4',
+            'Йога': '#FFEAA7',
+            'Растяжка': '#A8E6CF',
+            'Восстановление': '#DDA0DD'
+        };
+        
+        const distribution = Object.entries(types).map(([name, value]) => ({
+            name: name,
+            value: value,
+            color: typeColors[name] || '#95A5A6'
+        }));
+        
+        console.log('Final distribution:', distribution);
+        
+        setWorkoutDistribution(distribution);
+    }, []);
+
+    const processWeightProgress = useCallback((healthEntries) => {
+        if (!healthEntries || healthEntries.length === 0) {
+            setWeightProgress([]);
+            return;
+        }
+        
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        const recentEntries = healthEntries
+            .filter(entry => entry.weight && new Date(entry.date) >= thirtyDaysAgo)
+            .sort((a, b) => new Date(a.date) - new Date(b.date))
+            .map(entry => ({
+                date: new Date(entry.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }),
+                вес: entry.weight
+            }));
+        
+        setWeightProgress(recentEntries);
+    }, []);
+
+    const getCurrentData = () => {
+        switch(activeTab) {
+            case 'weekly': return weeklyData;
+            case 'monthly': return monthlyData;
+            case 'quarterly': return quarterlyData;
+            case 'yearly': return yearlyData;
+            default: return weeklyData;
+        }
     };
 
-    if (!userData) {
+    const getXAxisKey = () => {
+        switch(activeTab) {
+            case 'weekly': return 'day';
+            case 'monthly': return 'week';
+            case 'quarterly': return 'month';
+            case 'yearly': return 'month';
+            default: return 'day';
+        }
+    };
+
+    const getChartTitle = () => {
+        switch(activeTab) {
+            case 'weekly': return 'Активность по дням недели';
+            case 'monthly': return 'Активность по неделям месяца';
+            case 'quarterly': return 'Активность по месяцам (квартал)';
+            case 'yearly': return 'Активность по месяцам (год)';
+            default: return 'Активность';
+        }
+    };
+
+    useEffect(() => {
+        isMounted.current = true;
+        loadDashboardData();
+        
+        return () => {
+            isMounted.current = false;
+        };
+    }, [loadDashboardData]);
+
+    if (loading) {
         return (
             <div className="dashboard-loading">
                 <div className="spinner"></div>
@@ -66,146 +488,123 @@ const Dashboard = () => {
         );
     }
 
+    const currentData = getCurrentData();
+    const xAxisKey = getXAxisKey();
+
     return (
         <div className="dashboard">
-            {/* Хедер дашборда */}
             <div className="dashboard-header">
                 <button className="back-button" onClick={() => navigate('/home')}>
-                    ← 
+                    ← Назад
                 </button>
-                <h1>Статистика и прогресс</h1>
-                <p>Детальный анализ ваших тренировок</p>
+                <div className="header-content">
+                    <h1>📊 Статистика и прогресс</h1>
+                    <p>Анализ ваших тренировок и достижений</p>
+                </div>
+            </div>
+
+            <div className="stats-cards">
+                <div className="stat-card">
+                    <div className="stat-icon">🏋️</div>
+                    <div className="stat-info">
+                        <div className="stat-value">{totalStats.totalWorkouts}</div>
+                        <div className="stat-label">Всего тренировок</div>
+                    </div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-icon">🔥</div>
+                    <div className="stat-info">
+                        <div className="stat-value">{totalStats.totalCalories.toLocaleString()}</div>
+                        <div className="stat-label">Сожжено калорий</div>
+                    </div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-icon">⏱️</div>
+                    <div className="stat-info">
+                        <div className="stat-value">{totalStats.totalMinutes}</div>
+                        <div className="stat-label">Минут тренировок</div>
+                    </div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-icon">📈</div>
+                    <div className="stat-info">
+                        <div className="stat-value">{totalStats.avgDuration}</div>
+                        <div className="stat-label">Средняя длительность (мин)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="streak-cards">
+                <div className="streak-card current">
+                    <div className="streak-icon">🔥</div>
+                    <div className="streak-info">
+                        <div className="streak-value">{streakData.currentStreak}</div>
+                        <div className="streak-label">Текущая серия (дней)</div>
+                    </div>
+                </div>
+                <div className="streak-card best">
+                    <div className="streak-icon">🏆</div>
+                    <div className="streak-info">
+                        <div className="streak-value">{streakData.bestStreak}</div>
+                        <div className="streak-label">Лучшая серия (дней)</div>
+                    </div>
+                </div>
             </div>
 
             <div className="dashboard-content">
-                {/* Вкладки периода */}
-                <div className="period-tabs">
-                    <button 
-                        className={`tab ${activeTab === 'weekly' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('weekly')}
-                    >
-                        Неделя
-                    </button>
-                    <button 
-                        className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('monthly')}
-                    >
-                        Месяц
-                    </button>
-                    <button 
-                        className={`tab ${activeTab === 'quarterly' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('quarterly')}
-                    >
-                        Квартал
-                    </button>
-                    <button 
-                        className={`tab ${activeTab === 'yearly' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('yearly')}
-                    >
-                        Год
-                    </button>
-                </div>
-
-                {/* Общая статистика */}
-                <div className="overall-stats">
-                    <h2>Общая статистика</h2>
-                    <div className="stats-grid">
-                        <div className="stat-card">
-                            <div className="stat-icon">🏋️</div>
-                            <div className="stat-info">
-                                <h3>{stats.totalWorkouts}</h3>
-                                <p>Всего тренировок</p>
-                            </div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-icon">🔥</div>
-                            <div className="stat-info">
-                                <h3>{stats.totalCalories}</h3>
-                                <p>Сожжено калорий</p>
-                            </div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-icon">⏱️</div>
-                            <div className="stat-info">
-                                <h3>{stats.totalTime}</h3>
-                                <p>Общее время</p>
-                            </div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-icon">⚡</div>
-                            <div className="stat-info">
-                                <h3>{stats.streak}</h3>
-                                <p>Дней подряд</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Графики */}
-                <div className="charts-section">
+                {weightProgress.length > 0 && (
                     <div className="chart-container">
-                        <h3>Активность по дням</h3>
+                        <h3>⚖️ Динамика веса</h3>
                         <div className="chart-wrapper">
                             <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={weeklyData}>
+                                <LineChart data={weightProgress}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                    <XAxis dataKey="day" stroke="#666" />
-                                    <YAxis stroke="#666" />
-                                    <Tooltip 
-                                        contentStyle={{ 
-                                            backgroundColor: 'white', 
-                                            borderRadius: '8px',
-                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)'
-                                        }}
-                                    />
+                                    <XAxis dataKey="date" stroke="#666" />
+                                    <YAxis stroke="#666" domain={['auto', 'auto']} />
+                                    <Tooltip formatter={(value) => [`${value} кг`, 'Вес']} />
                                     <Legend />
-                                    <Line 
-                                        type="monotone" 
-                                        dataKey="калории" 
-                                        stroke="#667eea" 
-                                        strokeWidth={3}
-                                        dot={{ r: 4 }}
-                                        activeDot={{ r: 6 }}
-                                    />
-                                    <Line 
-                                        type="monotone" 
-                                        dataKey="время" 
-                                        stroke="#4ECDC4" 
-                                        strokeWidth={3}
-                                        dot={{ r: 4 }}
-                                    />
+                                    <Line type="monotone" dataKey="вес" stroke="#FF6B6B" strokeWidth={3} dot={{ r: 4 }} name="Вес (кг)" />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                )}
+
+                <div className="period-tabs">
+                    <button className={`tab ${activeTab === 'weekly' ? 'active' : ''}`} onClick={() => setActiveTab('weekly')}>📅 Неделя</button>
+                    <button className={`tab ${activeTab === 'monthly' ? 'active' : ''}`} onClick={() => setActiveTab('monthly')}>📆 Месяц</button>
+                    <button className={`tab ${activeTab === 'quarterly' ? 'active' : ''}`} onClick={() => setActiveTab('quarterly')}>📊 Квартал</button>
+                    <button className={`tab ${activeTab === 'yearly' ? 'active' : ''}`} onClick={() => setActiveTab('yearly')}>📈 Год</button>
+                </div>
+
+                <div className="charts-section">
+                    <div className="chart-container">
+                        <h3>📊 {getChartTitle()}</h3>
+                        <div className="chart-wrapper">
+                            <ResponsiveContainer width="100%" height={300}>
+                                <LineChart data={currentData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                    <XAxis dataKey={xAxisKey} stroke="#666" />
+                                    <YAxis yAxisId="left" stroke="#666" />
+                                    <YAxis yAxisId="right" orientation="right" stroke="#4ECDC4" />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Line yAxisId="left" type="monotone" dataKey="калории" stroke="#667eea" strokeWidth={3} dot={{ r: 4 }} name="Калории" />
+                                    <Line yAxisId="right" type="monotone" dataKey="время" stroke="#4ECDC4" strokeWidth={3} dot={{ r: 4 }} name="Время (мин)" />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
                     <div className="chart-container">
-                        <h3>Распределение тренировок</h3>
+                        <h3>🥧 Распределение тренировок по типам</h3>
                         <div className="chart-wrapper">
                             <ResponsiveContainer width="100%" height={300}>
                                 <PieChart>
-                                    <Pie
-                                        data={workoutDistribution}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={false}
-                                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                        outerRadius={100}
-                                        fill="#8884d8"
-                                        dataKey="value"
-                                    >
-                                        {workoutDistribution.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
+                                    <Pie data={workoutDistribution} cx="50%" cy="50%" labelLine={false} label={({ name, percent }) => percent > 0.05 ? `${name}: ${(percent * 100).toFixed(0)}%` : ''} outerRadius={100} dataKey="value">
+                                        {workoutDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                                     </Pie>
-                                    <Tooltip 
-                                        formatter={(value) => [`${value}%`, 'Доля']}
-                                        contentStyle={{ 
-                                            backgroundColor: 'white', 
-                                            borderRadius: '8px',
-                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)'
-                                        }}
-                                    />
+                                    <Tooltip formatter={(value, name, props) => [`${value} тренировок`, props.payload.name]} />
                                     <Legend />
                                 </PieChart>
                             </ResponsiveContainer>
@@ -213,103 +612,32 @@ const Dashboard = () => {
                     </div>
 
                     <div className="chart-container full-width">
-                        <h3>Прогресс по неделям</h3>
+                        <h3>📈 Количество тренировок и калорий</h3>
                         <div className="chart-wrapper">
                             <ResponsiveContainer width="100%" height={350}>
-                                <BarChart data={monthlyData}>
+                                <BarChart data={currentData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                    <XAxis dataKey="week" stroke="#666" />
-                                    <YAxis stroke="#666" />
-                                    <Tooltip 
-                                        contentStyle={{ 
-                                            backgroundColor: 'white', 
-                                            borderRadius: '8px',
-                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)'
-                                        }}
-                                    />
+                                    <XAxis dataKey={xAxisKey} stroke="#666" />
+                                    <YAxis yAxisId="left" stroke="#666" />
+                                    <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+                                    <Tooltip />
                                     <Legend />
-                                    <Bar 
-                                        dataKey="тренировки" 
-                                        fill="#8884d8" 
-                                        radius={[4, 4, 0, 0]}
-                                        name="Кол-во тренировок"
-                                    />
-                                    <Bar 
-                                        dataKey="калории" 
-                                        fill="#82ca9d" 
-                                        radius={[4, 4, 0, 0]}
-                                        name="Калории (сотни)"
-                                    />
+                                    <Bar yAxisId="left" dataKey="тренировки" fill="#8884d8" radius={[4, 4, 0, 0]} name="Кол-во тренировок" />
+                                    <Bar yAxisId="right" dataKey="калории" fill="#82ca9d" radius={[4, 4, 0, 0]} name="Калории" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
                 </div>
 
-                {/* Детальная статистика */}
-                <div className="detailed-stats">
-                    <h2>Детальная статистика</h2>
-                    <div className="stats-table">
-                        <div className="stat-row">
-                            <span className="stat-label">Средняя продолжительность тренировки:</span>
-                            <span className="stat-value">{stats.avgWorkoutTime} минут</span>
-                        </div>
-                        <div className="stat-row">
-                            <span className="stat-label">Средний пульс во время тренировок:</span>
-                            <span className="stat-value">{stats.avgHeartRate} уд/мин</span>
-                        </div>
-                        <div className="stat-row">
-                            <span className="stat-label">Консистентность тренировок:</span>
-                            <span className="stat-value">{stats.consistency}%</span>
-                        </div>
-                        <div className="stat-row">
-                            <span className="stat-label">Лучший результат (калории):</span>
-                            <span className="stat-value">720 калорий</span>
-                        </div>
-                        <div className="stat-row">
-                            <span className="stat-label">Самая длинная тренировка:</span>
-                            <span className="stat-value">85 минут</span>
-                        </div>
-                        <div className="stat-row">
-                            <span className="stat-label">Дней без пропусков:</span>
-                            <span className="stat-value">{stats.streak} дней</span>
-                        </div>
+                {totalStats.totalWorkouts === 0 && (
+                    <div className="no-data-message">
+                        <div className="no-data-icon">📭</div>
+                        <h3>Нет данных для отображения</h3>
+                        <p>Проведите несколько тренировок, чтобы увидеть статистику</p>
+                        <button onClick={() => navigate('/programs')} className="start-workout-btn">Начать тренировку</button>
                     </div>
-                </div>
-
-                {/* Инсайты */}
-                <div className="insights-section">
-                    <h2>Персональные инсайты</h2>
-                    <div className="insights-grid">
-                        <div className="insight-card">
-                            <div className="insight-icon">📈</div>
-                            <h4>Рост прогресса</h4>
-                            <p>Ваша средняя продолжительность тренировок увеличилась на 15% за последний месяц</p>
-                        </div>
-                        <div className="insight-card">
-                            <div className="insight-icon">🎯</div>
-                            <h4>Консистентность</h4>
-                            <p>Вы достигаете поставленных целей в 85% случаев - отличный результат!</p>
-                        </div>
-                        <div className="insight-card">
-                            <div className="insight-icon">🔥</div>
-                            <h4>Интенсивность</h4>
-                            <p>Уровень интенсивности тренировок соответствует вашему уровню подготовки</p>
-                        </div>
-                        <div className="insight-card">
-                            <div className="insight-icon">💪</div>
-                            <h4>Рекомендация</h4>
-                            <p>Попробуйте добавить 1 силовую тренировку в неделю для лучших результатов</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Кнопка экспорта */}
-            <div className="export-section">
-                <button className="export-btn">
-                    📥 Экспорт статистики
-                </button>
+                )}
             </div>
         </div>
     );

@@ -1,744 +1,403 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import './ProgramDetail.css';
 
-// Выносим константы данных из компонента
-const programExercises = {
-    1: [
-        {
-            id: 1,
-            name: 'Приседания со штангой',
-            description: 'Базовое упражнение для развития мышц ног и ягодиц. Держите спину прямой, опускайтесь до параллели с полом.',
-            sets: 4,
-            reps: '8-12',
-            rest: 90,
-            duration: 180,
-            muscleGroup: 'Ноги',
-            videoUrl: '#',
-            tips: ['Держите корпус напряженным', 'Не сводите колени внутрь', 'Вес на пятках']
-        },
-        {
-            id: 2,
-            name: 'Жим лежа',
-            description: 'Упражнение для развития грудных мышц. Опускайте штангу до касания груди, затем мощно выжимайте вверх.',
-            sets: 4,
-            reps: '8-12',
-            rest: 90,
-            duration: 150,
-            muscleGroup: 'Грудь',
-            videoUrl: '#',
-            tips: ['Лопатки сведены', 'Ноги упираются в пол', 'Не отрывайте ягодицы от скамьи']
-        },
-        {
-            id: 3,
-            name: 'Становая тяга',
-            description: 'Комплексное упражнение для развития мышц спины и ног. Сохраняйте нейтральное положение позвоночника.',
-            sets: 4,
-            reps: '6-8',
-            rest: 120,
-            duration: 210,
-            muscleGroup: 'Спина',
-            videoUrl: '#',
-            tips: ['Не округляйте спину', 'Штанга близко к ногам', 'Держите голову в нейтральном положении']
-        },
-        {
-            id: 4,
-            name: 'Армейский жим',
-            description: 'Упражнение для развития дельтовидных мышц. Поднимайте штангу над головой с полной амплитудой.',
-            sets: 3,
-            reps: '10-12',
-            rest: 60,
-            duration: 120,
-            muscleGroup: 'Плечи',
-            videoUrl: '#',
-            tips: ['Не выгибайте поясницу', 'Локти слегка вперед', 'Полная амплитуда движения']
-        },
-        {
-            id: 5,
-            name: 'Подтягивания',
-            description: 'Лучшее упражнение для развития широчайших мышц спины. Подтягивайтесь до касания перекладины подбородком.',
-            sets: 4,
-            reps: 'до отказа',
-            rest: 90,
-            duration: 180,
-            muscleGroup: 'Спина',
-            videoUrl: '#',
-            tips: ['Широкий хват', 'Полное разгибание рук', 'Контролируйте движение вниз']
-        }
-    ],
-    2: [
-        {
-            id: 6,
-            name: 'Жим ногами',
-            description: 'Безопасное упражнение для развития мышц ног. Идеально для новичков.',
-            sets: 3,
-            reps: '12-15',
-            rest: 60,
-            duration: 150,
-            muscleGroup: 'Ноги',
-            videoUrl: '#',
-            tips: ['Не разгибайте колени полностью', 'Ноги на ширине плеч', 'Контролируйте движение']
-        },
-        {
-            id: 7,
-            name: 'Тяга верхнего блока',
-            description: 'Альтернатива подтягиваниям для развития спины. Подтягивайте рукоять к груди.',
-            sets: 3,
-            reps: '10-12',
-            rest: 60,
-            duration: 120,
-            muscleGroup: 'Спина',
-            videoUrl: '#',
-            tips: ['Отклоняйте корпус назад', 'Сводите лопатки', 'Не используйте силу инерции']
-        },
-        {
-            id: 8,
-            name: 'Жим гантелей сидя',
-            description: 'Упражнение для развития плеч. Поднимайте гантели над головой.',
-            sets: 3,
-            reps: '12-15',
-            rest: 60,
-            duration: 120,
-            muscleGroup: 'Плечи',
-            videoUrl: '#',
-            tips: ['Локти под углом 90°', 'Контролируйте движение вниз', 'Не бросайте гантели']
-        },
-        {
-            id: 9,
-            name: 'Сгибания рук с гантелями',
-            description: 'Упражнение для развития бицепса. Поднимайте гантели к плечам.',
-            sets: 3,
-            reps: '12-15',
-            rest: 45,
-            duration: 90,
-            muscleGroup: 'Руки',
-            videoUrl: '#',
-            tips: ['Локти прижаты к корпусу', 'Не раскачивайтесь', 'Полная амплитуда']
-        },
-        {
-            id: 10,
-            name: 'Скручивания на пресс',
-            description: 'Базовое упражнение для мышц пресса. Поднимайте корпус к коленям.',
-            sets: 3,
-            reps: '20-25',
-            rest: 30,
-            duration: 90,
-            muscleGroup: 'Пресс',
-            videoUrl: '#',
-            tips: ['Не держитесь за голову', 'Выдыхайте на подъеме', 'Медленное движение']
-        }
-    ],
-    3: [
-        {
-            id: 11,
-            name: 'Бег на дорожке',
-            description: 'Кардио упражнение для улучшения выносливости и сжигания жира.',
-            sets: 1,
-            reps: '30 мин',
-            rest: 0,
-            duration: 1800,
-            muscleGroup: 'Кардио',
-            videoUrl: '#',
-            tips: ['Сохраняйте осанку', 'Дышите равномерно', 'Начинайте с разминки']
-        },
-        {
-            id: 12,
-            name: 'Велотренажер',
-            description: 'Низкоударное кардио для развития выносливости ног.',
-            sets: 1,
-            reps: '20 мин',
-            rest: 0,
-            duration: 1200,
-            muscleGroup: 'Кардио',
-            videoUrl: '#',
-            tips: ['Отрегулируйте высоту сиденья', 'Держите темп', 'Работайте с сопротивлением']
-        },
-        {
-            id: 13,
-            name: 'Эллиптический тренажер',
-            description: 'Комплексное кардио для всего тела с минимальной нагрузкой на суставы.',
-            sets: 1,
-            reps: '25 мин',
-            rest: 0,
-            duration: 1500,
-            muscleGroup: 'Кардио',
-            videoUrl: '#',
-            tips: ['Используйте рукоятки', 'Полная амплитуда', 'Контролируйте темп']
-        },
-        {
-            id: 14,
-            name: 'Скакалка',
-            description: 'Высокоинтенсивное кардио для координации и выносливости.',
-            sets: 5,
-            reps: '2 мин',
-            rest: 30,
-            duration: 120,
-            muscleGroup: 'Кардио',
-            videoUrl: '#',
-            tips: ['Приземляйтесь на носки', 'Держите локти близко', 'Начинайте медленно']
-        }
-    ],
-    4: [
-        {
-            id: 15,
-            name: 'Поза собаки мордой вниз',
-            description: 'Асана для растяжки всего тела и укрепления рук.',
-            sets: 1,
-            reps: '30 сек',
-            rest: 10,
-            duration: 30,
-            muscleGroup: 'Гибкость',
-            videoUrl: '#',
-            tips: ['Пятки к полу', 'Спина прямая', 'Растягивайте позвоночник']
-        },
-        {
-            id: 16,
-            name: 'Поза воина II',
-            description: 'Укрепление ног и улучшение баланса.',
-            sets: 2,
-            reps: '30 сек',
-            rest: 15,
-            duration: 30,
-            muscleGroup: 'Ноги',
-            videoUrl: '#',
-            tips: ['Переднее колено под 90°', 'Взгляд над рукой', 'Раскрытая грудная клетка']
-        },
-        {
-            id: 17,
-            name: 'Поза треугольника',
-            description: 'Растяжка боковой поверхности тела и укрепление ног.',
-            sets: 2,
-            reps: '30 сек',
-            rest: 15,
-            duration: 30,
-            muscleGroup: 'Гибкость',
-            videoUrl: '#',
-            tips: ['Руки на одной линии', 'Раскрытая грудная клетка', 'Ноги сильные']
-        },
-        {
-            id: 18,
-            name: 'Поза кошки-коровы',
-            description: 'Мобилизация позвоночника и улучшение гибкости спины.',
-            sets: 3,
-            reps: '10 повторений',
-            rest: 10,
-            duration: 60,
-            muscleGroup: 'Гибкость',
-            videoUrl: '#',
-            tips: ['Движение от таза', 'Плавный переход', 'Синхронизация с дыханием']
-        }
-    ],
-    5: [
-        {
-            id: 19,
-            name: 'Приседания с выпрыгиванием',
-            description: 'Взрывное упражнение для ягодиц и ног.',
-            sets: 4,
-            reps: '12-15',
-            rest: 60,
-            duration: 90,
-            muscleGroup: 'Ягодицы',
-            videoUrl: '#',
-            tips: ['Приземляйтесь мягко', 'Выпрыгивайте максимально', 'Держите спину прямой']
-        },
-        {
-            id: 20,
-            name: 'Ягодичный мостик',
-            description: 'Изолирующее упражнение для ягодичных мышц.',
-            sets: 3,
-            reps: '15-20',
-            rest: 45,
-            duration: 90,
-            muscleGroup: 'Ягодицы',
-            videoUrl: '#',
-            tips: ['Сжимайте ягодицы в верхней точке', 'Не прогибайте поясницу', 'Медленное движение']
-        },
-        {
-            id: 21,
-            name: 'Выпады с гантелями',
-            description: 'Упражнение для развития ног и ягодиц.',
-            sets: 3,
-            reps: '12 на каждую ногу',
-            rest: 60,
-            duration: 120,
-            muscleGroup: 'Ноги',
-            videoUrl: '#',
-            tips: ['Колено не выходит за носок', 'Корпус прямой', 'Равномерное распределение веса']
-        },
-        {
-            id: 22,
-            name: 'Подъемы на носки',
-            description: 'Упражнение для икроножных мышц.',
-            sets: 4,
-            reps: '20-25',
-            rest: 30,
-            duration: 60,
-            muscleGroup: 'Ноги',
-            videoUrl: '#',
-            tips: ['Полная амплитуда', 'Задержка в верхней точке', 'Контролируемое движение']
-        }
-    ],
-    6: [
-        {
-            id: 23,
-            name: 'Приседания со штангой (сила)',
-            description: 'Тяжелые приседания для развития максимальной силы ног.',
-            sets: 5,
-            reps: '3-5',
-            rest: 180,
-            duration: 300,
-            muscleGroup: 'Ноги',
-            videoUrl: '#',
-            tips: ['Тяжелый вес', 'Полный отдых между подходами', 'Идеальная техника']
-        },
-        {
-            id: 24,
-            name: 'Жим лежа (сила)',
-            description: 'Тяжелый жим для развития силы груди.',
-            sets: 5,
-            reps: '3-5',
-            rest: 180,
-            duration: 300,
-            muscleGroup: 'Грудь',
-            videoUrl: '#',
-            tips: ['Прогрессия весов', 'Помощь страхующего', 'Концентрация на движении']
-        },
-        {
-            id: 25,
-            name: 'Становая тяга (сила)',
-            description: 'Тяжелая становая для развития общей силы.',
-            sets: 5,
-            reps: '1-3',
-            rest: 240,
-            duration: 300,
-            muscleGroup: 'Спина',
-            videoUrl: '#',
-            tips: ['Разминка обязательна', 'Используйте лямки при необходимости', 'Не округляйте спину']
-        }
-    ],
-    7: [
-        {
-            id: 26,
-            name: 'Берпи',
-            description: 'Функциональное упражнение для всего тела.',
-            sets: 4,
-            reps: '15',
-            rest: 60,
-            duration: 90,
-            muscleGroup: 'Функциональ',
-            videoUrl: '#',
-            tips: ['Плавные переходы', 'Держите темп', 'Полное выпрямление']
-        },
-        {
-            id: 27,
-            name: 'Бросок медбола',
-            description: 'Взрывное упражнение для функциональной силы.',
-            sets: 3,
-            reps: '12',
-            rest: 60,
-            duration: 60,
-            muscleGroup: 'Функциональ',
-            videoUrl: '#',
-            tips: ['Используйте ноги', 'Полное движение', 'Контролируйте падение']
-        },
-        {
-            id: 28,
-            name: 'Прогулка фермера',
-            description: 'Упражнение для развития силы хвата и корпуса.',
-            sets: 3,
-            reps: '30 метров',
-            rest: 90,
-            duration: 60,
-            muscleGroup: 'Функциональ',
-            videoUrl: '#',
-            tips: ['Прямая спина', 'Равномерный шаг', 'Не наклоняйтесь вперед']
-        }
-    ],
-    8: [
-        {
-            id: 29,
-            name: 'Бег интервальный',
-            description: 'Интервалы высокой интенсивности для сжигания жира.',
-            sets: 8,
-            reps: '1 мин бег / 1 мин ходьба',
-            rest: 60,
-            duration: 60,
-            muscleGroup: 'Кардио',
-            videoUrl: '#',
-            tips: ['Максимальная скорость', 'Восстановление важно', 'Контролируйте пульс']
-        },
-        {
-            id: 30,
-            name: 'Скалолаз',
-            description: 'Упражнение для пресса и кардио.',
-            sets: 4,
-            reps: '30 сек',
-            rest: 30,
-            duration: 30,
-            muscleGroup: 'Пресс',
-            videoUrl: '#',
-            tips: ['Быстрое движение ног', 'Прямая спина', 'Держите темп']
-        },
-        {
-            id: 31,
-            name: 'Планка с касанием плеч',
-            description: 'Статическое упражнение для кора с динамическим элементом.',
-            sets: 3,
-            reps: '10 на каждую руку',
-            rest: 45,
-            duration: 60,
-            muscleGroup: 'Пресс',
-            videoUrl: '#',
-            tips: ['Не раскачивайтесь', 'Держите корпус напряженным', 'Медленные касания']
-        }
-    ],
-    9: [
-        {
-            id: 32,
-            name: 'Растяжка подколенных сухожилий',
-            description: 'Улучшение гибкости задней поверхности бедра.',
-            sets: 3,
-            reps: '30 сек',
-            rest: 10,
-            duration: 30,
-            muscleGroup: 'Гибкость',
-            videoUrl: '#',
-            tips: ['Не пружиньте', 'Дышите глубоко', 'Медленное растяжение']
-        },
-        {
-            id: 33,
-            name: 'Растяжка квадрицепса',
-            description: 'Улучшение гибкости передней поверхности бедра.',
-            sets: 3,
-            reps: '30 сек на каждую ногу',
-            rest: 10,
-            duration: 30,
-            muscleGroup: 'Гибкость',
-            videoUrl: '#',
-            tips: ['Держите колени вместе', 'Не наклоняйтесь вперед', 'Контролируйте дыхание']
-        },
-        {
-            id: 34,
-            name: 'Растяжка грудных мышц',
-            description: 'Улучшение подвижности плечевого пояса.',
-            sets: 3,
-            reps: '30 сек',
-            rest: 10,
-            duration: 30,
-            muscleGroup: 'Гибкость',
-            videoUrl: '#',
-            tips: ['Локти на уровне плеч', 'Плавное движение', 'Не вызывайте боль']
-        }
-    ],
-    10: [
-        {
-            id: 35,
-            name: 'Спринт на велотренажере',
-            description: 'Взрывные интервалы для максимального жиросжигания.',
-            sets: 10,
-            reps: '30 сек спринт / 30 сек отдых',
-            rest: 30,
-            duration: 30,
-            muscleGroup: 'Кардио',
-            videoUrl: '#',
-            tips: ['Максимальное усилие', 'Быстрое восстановление', 'Следите за техникой']
-        },
-        {
-            id: 36,
-            name: 'Прыжки на бокс',
-            description: 'Взрывное плиометрическое упражнение.',
-            sets: 4,
-            reps: '10',
-            rest: 60,
-            duration: 30,
-            muscleGroup: 'Кардио',
-            videoUrl: '#',
-            tips: ['Приземляйтесь мягко', 'Используйте руки', 'Постепенно увеличивайте высоту']
-        },
-        {
-            id: 37,
-            name: 'Русские скручивания',
-            description: 'Упражнение для косых мышц пресса.',
-            sets: 3,
-            reps: '20 на каждую сторону',
-            rest: 30,
-            duration: 60,
-            muscleGroup: 'Пресс',
-            videoUrl: '#',
-            tips: ['Отрывайте ноги от пола', 'Полная амплитуда', 'Не спешите']
-        }
-    ],
-    11: [
-        {
-            id: 38,
-            name: 'Разведение гантелей лежа',
-            description: 'Изолирующее упражнение для грудных мышц.',
-            sets: 4,
-            reps: '12-15',
-            rest: 60,
-            duration: 120,
-            muscleGroup: 'Грудь',
-            videoUrl: '#',
-            tips: ['Небольшой изгиб в локтях', 'Контролируемое движение', 'Сведение в верхней точке']
-        },
-        {
-            id: 39,
-            name: 'Тяга Т-грифа',
-            description: 'Упражнение для толщины спины.',
-            sets: 4,
-            reps: '10-12',
-            rest: 90,
-            duration: 150,
-            muscleGroup: 'Спина',
-            videoUrl: '#',
-            tips: ['Нейтральный хват', 'Движение локтей назад', 'Сжатие лопаток']
-        },
-        {
-            id: 40,
-            name: 'Разведения гантелей в наклоне',
-            description: 'Упражнение для задних дельт.',
-            sets: 4,
-            reps: '12-15',
-            rest: 60,
-            duration: 120,
-            muscleGroup: 'Плечи',
-            videoUrl: '#',
-            tips: ['Корпус параллелен полу', 'Локти слегка согнуты', 'Подъем до уровня плеч']
-        }
-    ],
-    12: [
-        {
-            id: 41,
-            name: 'Утренняя зарядка - разминка',
-            description: 'Комплекс упражнений для пробуждения тела.',
-            sets: 1,
-            reps: '5 мин',
-            rest: 0,
-            duration: 300,
-            muscleGroup: 'Все тело',
-            videoUrl: '#',
-            tips: ['Плавные движения', 'Концентрация на дыхании', 'Начинайте медленно']
-        },
-        {
-            id: 42,
-            name: 'Наклоны вперед',
-            description: 'Растяжка спины и ног.',
-            sets: 2,
-            reps: '30 сек',
-            rest: 15,
-            duration: 30,
-            muscleGroup: 'Гибкость',
-            videoUrl: '#',
-            tips: ['Не сгибайте колени', 'Растягивайтесь на выдохе', 'Не перенапрягайтесь']
-        },
-        {
-            id: 43,
-            name: 'Вращения руками',
-            description: 'Разминка плечевого пояса.',
-            sets: 2,
-            reps: '20 вперед / 20 назад',
-            rest: 10,
-            duration: 60,
-            muscleGroup: 'Плечи',
-            videoUrl: '#',
-            tips: ['Полная амплитуда', 'Увеличивайте скорость постепенно', 'Контролируйте движение']
-        }
-    ]
+export const intensityColors = {
+    'Низкая': '#4CAF50',
+    'Средняя': '#FF9800',
+    'Высокая': '#F44336',
+    'Очень высокая': '#9C27B0',
+    'Экстремальная': '#D32F2F'
 };
 
-const programDetails = {
-    1: {
-        title: 'Ударный режим PRO',
-        description: '30 дней экстремальных тренировок для максимального прогресса',
-        icon: '⚡',
-        color: '#FF6B6B',
-        level: 'advanced',
-        duration: '30 дней',
-        workoutsPerWeek: 6
-    },
-    2: {
-        title: 'Базовая сила',
-        description: 'Фундаментальная программа для набора мышечной массы новичкам',
-        icon: '💪',
-        color: '#4ECDC4',
-        level: 'beginner',
-        duration: '12 недель',
-        workoutsPerWeek: 4
-    },
-    3: {
-        title: 'Кардио марафон',
-        description: 'Интенсивная программа для развития выносливости и сжигания жира',
-        icon: '🏃',
-        color: '#45B7D1',
-        level: 'intermediate',
-        duration: '8 недель',
-        workoutsPerWeek: 5
-    },
-    4: {
-        title: 'Йога-трансформация',
-        description: 'Глубокая работа с телом и сознанием для гармонии и гибкости',
-        icon: '🧘',
-        color: '#96CEB4',
-        level: 'beginner',
-        duration: '6 недель',
-        workoutsPerWeek: 7
-    },
-    5: {
-        title: 'Женский фитнес',
-        description: 'Специальная программа для тонуса и формы женского тела',
-        icon: '👩',
-        color: '#FFEAA7',
-        level: 'intermediate',
-        duration: '10 недель',
-        workoutsPerWeek: 5
-    },
-    6: {
-        title: 'Силовой пауэрлифтинг',
-        description: 'Максимальное развитие силы в базовых упражнениях',
-        icon: '🏋️‍♂️',
-        color: '#DDA0DD',
-        level: 'advanced',
-        duration: '16 недель',
-        workoutsPerWeek: 4
-    },
-    7: {
-        title: 'Функциональный тренинг',
-        description: 'Развитие функциональной силы для повседневной жизни',
-        icon: '⚡',
-        color: '#FF9A76',
-        level: 'intermediate',
-        duration: '8 недель',
-        workoutsPerWeek: 3
-    },
-    8: {
-        title: 'Сушка и рельеф',
-        description: 'Экстремальная программа для достижения спортивной формы',
-        icon: '🔥',
-        color: '#3D5A80',
-        level: 'advanced',
-        duration: '6 недель',
-        workoutsPerWeek: 6
-    },
-    9: {
-        title: 'Растяжка и мобильность',
-        description: 'Улучшение гибкости и подвижности суставов',
-        icon: '✨',
-        color: '#98C1D9',
-        level: 'beginner',
-        duration: '4 недели',
-        workoutsPerWeek: 7
-    },
-    10: {
-        title: 'HIIT интенсив',
-        description: 'Высокоинтенсивные интервальные тренировки для быстрых результатов',
-        icon: '⚡',
-        color: '#EE6C4D',
-        level: 'intermediate',
-        duration: '5 недель',
-        workoutsPerWeek: 4
-    },
-    11: {
-        title: 'Бодибилдинг классик',
-        description: 'Классическая программа для построения гармоничного тела',
-        icon: '🏆',
-        color: '#06D6A0',
-        level: 'advanced',
-        duration: '12 недель',
-        workoutsPerWeek: 5
-    },
-    12: {
-        title: 'Утренняя зарядка+',
-        description: 'Энергичные утренние тренировки для бодрости на весь день',
-        icon: '☀️',
-        color: '#FFD166',
-        level: 'beginner',
-        duration: '4 недели',
-        workoutsPerWeek: 7
-    }
-};
+const API_URL = 'http://localhost:5000/api';
 
 const ProgramDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [program, setProgram] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [timer, setTimer] = useState(null);
+    const [error, setError] = useState(null);
+    
+    const [isWorkoutMode, setIsWorkoutMode] = useState(false);
+    const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+    const [currentSet, setCurrentSet] = useState(1);
     const [timeLeft, setTimeLeft] = useState(0);
     const [isResting, setIsResting] = useState(false);
+    const [isTimerActive, setIsTimerActive] = useState(false);
+    const [gifError, setGifError] = useState({});
+    const [saving, setSaving] = useState(false);
+    
+    const completedSetsRef = useRef({});
+    const exerciseCompletionsRef = useRef([]);
+    
+    const [progressUpdate, setProgressUpdate] = useState(0);
+    const [completedCount, setCompletedCount] = useState(0);
+    const [completedSetsForCurrent, setCompletedSetsForCurrent] = useState(0);
 
-    useEffect(() => {
-        const programId = parseInt(id);
-        const exercises = programExercises[programId] || [];
-        const details = programDetails[programId] || {};
+    const timerRef = useRef(null);
+    const isMounted = useRef(true);
+    const currentExerciseIndexRef = useRef(0);
+    const currentSetRef = useRef(1);
+
+    const forceUpdateProgress = useCallback(() => {
+        const exerciseIndex = currentExerciseIndexRef.current;
+        const currentCompletedSets = completedSetsRef.current[exerciseIndex] || 0;
+        const completedExercisesCount = exerciseCompletionsRef.current.length;
         
-        // Используем setTimeout для имитации загрузки
-        const timerId = setTimeout(() => {
-            setProgram({
-                id: programId,
-                ...details,
-                exercises: exercises
-            });
-            setLoading(false);
-        }, 500);
-
-        // Очищаем таймер при размонтировании
-        return () => clearTimeout(timerId);
-    }, [id]);
-
-    const handleNext = useCallback(() => {
-        setIsResting(false);
-        setTimeLeft(0);
-    }, []);
-
-    useEffect(() => {
-        // Если есть активный таймер - очищаем
-        if (timer) {
-            clearInterval(timer);
-        }
+        setCompletedCount(completedExercisesCount);
+        setCompletedSetsForCurrent(currentCompletedSets);
+        setProgressUpdate(prev => prev + 1);
         
-        // Если время не истекло - запускаем новый таймер
-        if (timeLeft > 0) {
-            const newTimer = setInterval(() => {
-                setTimeLeft(prev => {
-                    if (prev <= 1) {
-                        clearInterval(newTimer);
-                        if (isResting) {
-                            handleNext();
-                        }
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-            
-            setTimer(newTimer);
-            
-            // Очищаем интервал при размонтировании или изменении зависимостей
-            return () => clearInterval(newTimer);
-        }
-        
-        // Если время истекло, убедимся что timer очищен
-        return () => {
-            if (timer) {
-                clearInterval(timer);
-            }
-        };
-    }, [timeLeft, isResting, handleNext]);
-
-    const startRest = useCallback((seconds) => {
-        setIsResting(true);
-        setTimeLeft(seconds);
-    }, []);
-
-    const startExercise = useCallback((seconds) => {
-        setIsResting(false);
-        setTimeLeft(seconds);
+        console.log('Progress updated:', {
+            completedExercises: completedExercisesCount,
+            completedSetsForCurrent: currentCompletedSets,
+            currentSet: currentSetRef.current,
+            exerciseIndex: exerciseIndex
+        });
     }, []);
 
     const formatTime = useCallback((seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }, []);
+
+    const stopTimer = useCallback(() => {
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
+        setIsTimerActive(false);
+    }, []);
+
+    const exitWorkout = useCallback(async (isComplete = false) => {
+        stopTimer();
+        
+        if (isComplete && program && program.exercises && program.exercises.length > 0) {
+            const userId = localStorage.getItem('userId');
+            if (userId) {
+                setSaving(true);
+                try {
+                    const totalDuration = program.exercises.reduce((sum, ex) => sum + (ex.duration || 0), 0);
+                    const totalCalories = Math.round(totalDuration / 60 * 8);
+                    const completedExercises = exerciseCompletionsRef.current.length;
+                    const totalExercises = program.exercises.length;
+                    
+                    const workoutData = {
+                        user_id: parseInt(userId),
+                        workout_name: program.title,
+                        duration: totalDuration,
+                        date: new Date().toISOString().split('T')[0],
+                        type: program.title.toLowerCase().includes('кардио') ? 'cardio' : 'strength',
+                        exercises_completed: completedExercises,
+                        total_exercises: totalExercises,
+                        calories_burned: totalCalories
+                    };
+                    
+                    console.log('Saving workout result:', workoutData);
+                    
+                    const response = await fetch(`${API_URL}/workouts`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(workoutData)
+                    });
+                    
+                    if (response.ok) {
+                        const today = new Date().toISOString().split('T')[0];
+                        localStorage.setItem(`workout_completed_${today}`, 'true');
+                        alert(`🎉 Поздравляем! Тренировка "${program.title}" завершена!\n\n✅ Выполнено упражнений: ${completedExercises}/${totalExercises}\n🔥 Сожжено калорий: ${totalCalories} ккал`);
+                    } else {
+                        alert('🎉 Поздравляем! Тренировка завершена!');
+                    }
+                } catch (error) {
+                    console.error('Error saving workout:', error);
+                    alert('🎉 Поздравляем! Тренировка завершена!');
+                } finally {
+                    setSaving(false);
+                }
+            } else {
+                alert('🎉 Поздравляем! Тренировка завершена!');
+            }
+        }
+        
+        setIsWorkoutMode(false);
+        setCurrentExerciseIndex(0);
+        setCurrentSet(1);
+        setTimeLeft(0);
+        setIsResting(false);
+        setIsTimerActive(false);
+        setGifError({});
+        completedSetsRef.current = {};
+        exerciseCompletionsRef.current = [];
+        setCompletedCount(0);
+        setCompletedSetsForCurrent(0);
+        
+        sessionStorage.removeItem('workoutStartTime');
+        navigate('/home');
+    }, [program, navigate, stopTimer]);
+
+    // Функция для перехода к следующему упражнению
+    const goToNextExercise = useCallback(() => {
+        const exerciseIndex = currentExerciseIndexRef.current;
+        const currentExercise = program?.exercises[exerciseIndex];
+        
+        if (currentExercise) {
+            console.log(`🎉 Упражнение "${currentExercise.name}" полностью завершено!`);
+            
+            if (!exerciseCompletionsRef.current.includes(exerciseIndex)) {
+                exerciseCompletionsRef.current = [...exerciseCompletionsRef.current, exerciseIndex];
+            }
+            
+            forceUpdateProgress();
+            
+            // Переходим к следующему упражнению
+            if (exerciseIndex < program.exercises.length - 1) {
+                const newIndex = exerciseIndex + 1;
+                currentExerciseIndexRef.current = newIndex;
+                currentSetRef.current = 1;
+                setCurrentExerciseIndex(newIndex);
+                setCurrentSet(1);
+                forceUpdateProgress();
+                console.log(`➡️ Переход к упражнению ${newIndex + 1}: ${program.exercises[newIndex].name}`);
+            } else {
+                console.log('🏆 Тренировка полностью завершена!');
+                exitWorkout(true);
+            }
+        }
+    }, [program, forceUpdateProgress, exitWorkout]);
+
+    // Запуск таймера (ОСНОВНАЯ ЛОГИКА)
+    const startTimer = useCallback((duration, isRestingPhase) => {
+        stopTimer();
+        
+        setTimeLeft(duration);
+        setIsResting(isRestingPhase);
+        setIsTimerActive(true);
+        
+        timerRef.current = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev <= 1) {
+                    stopTimer();
+                    
+                    if (isRestingPhase) {
+                        // === ОТДЫХ ЗАКОНЧИЛСЯ ===
+                        console.log('⏰ Отдых закончился');
+                        const exerciseIndex = currentExerciseIndexRef.current;
+                        const currentExercise = program?.exercises[exerciseIndex];
+                        const setNum = currentSetRef.current;
+                        
+                        if (currentExercise && setNum < currentExercise.sets) {
+                            // Увеличиваем номер подхода и запускаем следующий подход
+                            const newSet = setNum + 1;
+                            currentSetRef.current = newSet;
+                            setCurrentSet(newSet);
+                            forceUpdateProgress();
+                            console.log(`🔄 Начинаем подход ${newSet}/${currentExercise.sets}`);
+                            startTimer(currentExercise.duration, false);
+                        } else if (currentExercise && setNum === currentExercise.sets) {
+                            // Отдых после последнего подхода - переходим к следующему упражнению
+                            console.log(`✅ Отдых после последнего подхода, переходим к следующему упражнению`);
+                            goToNextExercise();
+                        }
+                    } else {
+                        // === УПРАЖНЕНИЕ ЗАКОНЧИЛОСЬ ===
+                        console.log('⏰ Упражнение закончилось');
+                        const exerciseIndex = currentExerciseIndexRef.current;
+                        const currentExercise = program?.exercises[exerciseIndex];
+                        const setNum = currentSetRef.current;
+                        
+                        if (currentExercise) {
+                            // Обновляем завершенные подходы
+                            const currentCompleted = completedSetsRef.current[exerciseIndex] || 0;
+                            const newCompleted = Math.max(currentCompleted, setNum);
+                            completedSetsRef.current[exerciseIndex] = newCompleted;
+                            forceUpdateProgress();
+                            
+                            if (setNum < currentExercise.sets) {
+                                // Запускаем отдых перед следующим подходом
+                                console.log(`🔄 Запускаем отдых перед подходом ${setNum + 1}/${currentExercise.sets}`);
+                                startTimer(currentExercise.rest, true);
+                            } else if (setNum === currentExercise.sets) {
+                                // Это был последний подход, переходим к следующему упражнению
+                                console.log(`✅ Последний подход завершен, переходим к следующему упражнению`);
+                                goToNextExercise();
+                            }
+                        }
+                    }
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    }, [program, stopTimer, forceUpdateProgress, goToNextExercise]);
+
+    // Пропустить таймер
+    const skipTimer = useCallback(() => {
+        stopTimer();
+        
+        if (isResting) {
+            // Пропускаем отдых
+            console.log('⏭️ Пропускаем отдых');
+            const exerciseIndex = currentExerciseIndexRef.current;
+            const currentExercise = program?.exercises[exerciseIndex];
+            const setNum = currentSetRef.current;
+            
+            if (currentExercise && setNum < currentExercise.sets) {
+                const newSet = setNum + 1;
+                currentSetRef.current = newSet;
+                setCurrentSet(newSet);
+                forceUpdateProgress();
+                startTimer(currentExercise.duration, false);
+            } else if (currentExercise && setNum === currentExercise.sets) {
+                goToNextExercise();
+            }
+        } else {
+            // Пропускаем упражнение - сразу запускаем отдых
+            console.log('⏭️ Пропускаем упражнение');
+            const exerciseIndex = currentExerciseIndexRef.current;
+            const currentExercise = program?.exercises[exerciseIndex];
+            const setNum = currentSetRef.current;
+            
+            if (currentExercise) {
+                const currentCompleted = completedSetsRef.current[exerciseIndex] || 0;
+                const newCompleted = Math.max(currentCompleted, setNum);
+                completedSetsRef.current[exerciseIndex] = newCompleted;
+                forceUpdateProgress();
+                
+                if (setNum < currentExercise.sets) {
+                    startTimer(currentExercise.rest, true);
+                } else if (setNum === currentExercise.sets) {
+                    goToNextExercise();
+                }
+            }
+        }
+    }, [isResting, program, stopTimer, forceUpdateProgress, startTimer, goToNextExercise]);
+
+    // Полный пропуск упражнения
+    const skipExercise = useCallback(() => {
+        stopTimer();
+        
+        if (!program || !isMounted.current) return;
+        
+        if (window.confirm(`Пропустить упражнение "${program.exercises[currentExerciseIndex]?.name}"?`)) {
+            goToNextExercise();
+        }
+    }, [program, currentExerciseIndex, stopTimer, goToNextExercise]);
+
+    const handleGifError = useCallback((exerciseId) => {
+        if (isMounted.current) {
+            setGifError(prev => ({ ...prev, [exerciseId]: true }));
+        }
+    }, []);
+
+    const startWorkout = useCallback(() => {
+        if (program && program.exercises && program.exercises.length > 0) {
+            sessionStorage.setItem('workoutStartTime', Date.now().toString());
+            sessionStorage.removeItem('workoutDuration');
+            
+            currentExerciseIndexRef.current = 0;
+            currentSetRef.current = 1;
+            completedSetsRef.current = {};
+            exerciseCompletionsRef.current = [];
+            
+            setIsWorkoutMode(true);
+            setCurrentExerciseIndex(0);
+            setCurrentSet(1);
+            setTimeLeft(0);
+            setIsResting(false);
+            setIsTimerActive(false);
+            setGifError({});
+            setCompletedCount(0);
+            setCompletedSetsForCurrent(0);
+            setProgressUpdate(0);
+            stopTimer();
+        }
+    }, [program, stopTimer]);
+
+    const goToPrograms = useCallback(() => {
+        navigate('/programs');
+    }, [navigate]);
+
+    const startCurrentExercise = useCallback(() => {
+        const currentExercise = program?.exercises[currentExerciseIndex];
+        if (currentExercise) {
+            startTimer(currentExercise.duration, false);
+        }
+    }, [program, currentExerciseIndex, startTimer]);
+
+    useEffect(() => {
+        currentExerciseIndexRef.current = currentExerciseIndex;
+        currentSetRef.current = currentSet;
+        forceUpdateProgress();
+    }, [currentExerciseIndex, currentSet, forceUpdateProgress]);
+
+    // Загрузка программы
+    useEffect(() => {
+        const loadProgramData = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                
+                const programResponse = await fetch(`${API_URL}/programs/${id}`);
+                if (!programResponse.ok) throw new Error('Program not found');
+                const programData = await programResponse.json();
+                
+                const exercisesResponse = await fetch(`${API_URL}/programs/${id}/exercises`);
+                if (!exercisesResponse.ok) throw new Error('Exercises not found');
+                const exercisesData = await exercisesResponse.json();
+                
+                const formattedExercises = exercisesData.map(ex => ({
+                    id: ex.id,
+                    name: ex.name,
+                    description: ex.description || 'Описание упражнения',
+                    muscleGroup: ex.muscleGroup || 'Общее',
+                    sets: ex.sets || 3,
+                    reps: ex.reps || '12',
+                    rest: ex.rest || 60,
+                    duration: ex.duration || 120,
+                    tips: ex.tips || ['Следуйте технике выполнения'],
+                    gifUrl: ex.gifUrl || null
+                }));
+                
+                const fullProgram = {
+                    id: programData.id,
+                    title: programData.title,
+                    description: programData.description,
+                    icon: programData.icon || '💪',
+                    color: programData.color || '#4ECDC4',
+                    level: programData.level,
+                    duration: programData.duration,
+                    workoutsPerWeek: programData.workouts_per_week || programData.workoutsPerWeek,
+                    exercises: formattedExercises
+                };
+                
+                setProgram(fullProgram);
+                setLoading(false);
+                
+            } catch (err) {
+                console.error('Error loading program:', err);
+                setError(err.message);
+                setLoading(false);
+            }
+        };
+        
+        if (id) {
+            loadProgramData();
+        }
+        
+        return () => {
+            isMounted.current = false;
+            stopTimer();
+        };
+    }, [id, stopTimer]);
+
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+            }
+        };
     }, []);
 
     if (loading) {
@@ -754,29 +413,220 @@ const ProgramDetail = () => {
         );
     }
 
-    if (!program) {
+    if (error || !program) {
         return (
             <div className="program-detail-page">
                 <div className="program-detail-header">
-                    <button className="back-button" onClick={() => navigate('/programs')}>
+                    <button className="back-button" onClick={goToPrograms}>
                         <span className="back-arrow">←</span>
-                        <span>Назад к программам</span>
                     </button>
                     <h1>Программа не найдена</h1>
+                    <p>{error || 'Проверьте ID программы'}</p>
                 </div>
             </div>
         );
     }
 
+    // РЕЖИМ ТРЕНИРОВКИ
+    if (isWorkoutMode) {
+        const currentExercise = program.exercises[currentExerciseIndex];
+        if (!currentExercise) {
+            return (
+                <div className="workout-mode-overlay">
+                    <div className="workout-container">
+                        <button className="close-workout" onClick={() => exitWorkout(false)}>✕</button>
+                        <p>Упражнение не найдено</p>
+                    </div>
+                </div>
+            );
+        }
+        
+        const hasGifError = gifError[currentExercise.id];
+        const totalExercises = program.exercises.length;
+        
+        let totalSets = 0;
+        let completedTotalSets = 0;
+        program.exercises.forEach((ex, idx) => {
+            const sets = ex.sets;
+            totalSets += sets;
+            if (idx < currentExerciseIndex) {
+                completedTotalSets += sets;
+            } else if (idx === currentExerciseIndex) {
+                completedTotalSets += completedSetsForCurrent;
+            }
+        });
+        const overallProgressPercent = totalSets > 0 ? Math.round((completedTotalSets / totalSets) * 100) : 0;
+        const currentExerciseProgressPercent = currentExercise.sets > 0 ? Math.round((completedSetsForCurrent / currentExercise.sets) * 100) : 0;
+
+        return (
+            <div className="workout-mode-overlay">
+                <div className="workout-container">
+                    <button className="close-workout" onClick={() => exitWorkout(false)}>✕</button>
+                    
+                    <button 
+                        className="complete-workout-btn"
+                        onClick={() => {
+                            if (window.confirm('Завершить тренировку досрочно?')) {
+                                exitWorkout(true);
+                            }
+                        }}
+                        disabled={saving}
+                    >
+                        {saving ? '⏳' : '✓'}
+                    </button>
+                    
+                    <div className="workout-header">
+                        <h2>{program.title}</h2>
+                        
+                        {/* <div className="overall-progress-container">
+                            <div className="progress-labels">
+                                <span>🏆 Общий прогресс тренировки</span>
+                                <span>{overallProgressPercent}%</span>
+                            </div>
+                            <div className="overall-progress-bar">
+                                <div 
+                                    className="overall-progress-fill"
+                                    style={{ width: `${overallProgressPercent}%` }}
+                                ></div>
+                            </div>
+                        </div> */}
+                        
+                        <div className="workout-progress-info">
+                            <div className="progress-badge green">
+                                📋 Упражнения: {completedCount}/{totalExercises}
+                            </div>
+                            <div className="progress-badge orange">
+                                💪 Текущее: {currentExercise.name}
+                            </div>
+                            <div className="progress-badge blue">
+                                🔄 Подход {currentSet}/{currentExercise.sets}
+                            </div>
+                        </div>
+                        
+                        {/* <div className="current-exercise-progress">
+                            <div className="progress-labels">
+                                <span>📊 Прогресс упражнения</span>
+                                <span>{completedSetsForCurrent}/{currentExercise.sets} подходов ({currentExerciseProgressPercent}%)</span>
+                            </div>
+                            <div className="current-progress-bar">
+                                <div 
+                                    className="current-progress-fill"
+                                    style={{ width: `${currentExerciseProgressPercent}%` }}
+                                ></div>
+                            </div>
+                        </div> */}
+                    </div>
+
+                    <div className="workout-main">
+                        <div className="exercise-gif-container">
+                            {!hasGifError && currentExercise.gifUrl ? (
+                                <img 
+                                    src={currentExercise.gifUrl}
+                                    alt={currentExercise.name}
+                                    className="exercise-gif"
+                                    onError={() => handleGifError(currentExercise.id)}
+                                />
+                            ) : (
+                                <div className="gif-placeholder">
+                                    <span className="placeholder-icon">🏋️</span>
+                                    <span className="placeholder-text">{currentExercise.name}</span>
+                                </div>
+                            )}
+                            <div className="gif-overlay">
+                                <span className="exercise-name-large">{currentExercise.name}</span>
+                                <span className="muscle-group-badge">{currentExercise.muscleGroup}</span>
+                            </div>
+                        </div>
+
+                        {/* Добавляем класс hidden-on-mobile-when-timer-active для управления видимостью */}
+                        <div className={`exercise-details-panel ${isTimerActive ? 'timer-active' : ''}`}>
+                            <h3>{currentExercise.name}</h3>
+                            <p className="description">{currentExercise.description}</p>
+                            
+                            <div className="stats-grid-compact">
+                                <div className="stat-item-compact">
+                                    <span className="stat-icon">🔄</span>
+                                    <div>
+                                        <small>Повторения</small>
+                                        <strong>{currentExercise.reps}</strong>
+                                    </div>
+                                </div>
+                                <div className="stat-item-compact">
+                                    <span className="stat-icon">⏱️</span>
+                                    <div>
+                                        <small>Длительность</small>
+                                        <strong>{Math.floor(currentExercise.duration / 60)}:{String(currentExercise.duration % 60).padStart(2, '0')}</strong>
+                                    </div>
+                                </div>
+                                <div className="stat-item-compact">
+                                    <span className="stat-icon">⏸️</span>
+                                    <div>
+                                        <small>Отдых</small>
+                                        <strong>{currentExercise.rest} сек</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {currentExercise.tips && currentExercise.tips.length > 0 && (
+                                <div className="tips-mini">
+                                    <h4>💡 Совет</h4>
+                                    <p>{currentExercise.tips[0]}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {isTimerActive && timeLeft > 0 ? (
+                        <div className={`workout-timer ${isResting ? 'rest-timer' : 'exercise-timer'}`}>
+                            <div className="timer-content">
+                                <span className="timer-label">
+                                    {isResting ? '⏸️ Время отдыха' : '🏃 Выполняйте упражнение'}
+                                </span>
+                                <span className="timer-value">{formatTime(timeLeft)}</span>
+                                <button className="skip-timer" onClick={skipTimer}>
+                                    Пропустить
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="workout-controls">
+                            {!isResting && !isTimerActive && (
+                                <button 
+                                    className="btn-start-exercise"
+                                    onClick={startCurrentExercise}
+                                >
+                                    <span className="btn-icon">▶️</span>
+                                    Начать упражнение
+                                </button>
+                            )}
+                            
+                            <button 
+                                className="btn-skip-exercise"
+                                onClick={skipExercise}
+                            >
+                                <span className="btn-icon">⏭️</span>
+                                Пропустить упражнение
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // СТАНДАРТНЫЙ РЕНДЕРИНГ
     return (
         <div className="program-detail-page">
-            <div className="program-detail-header">
-                <button className="back-button" onClick={() => navigate('/programs')}>
+            <div className="program-detail-header programs-header">
+                <button className="back-button" onClick={goToPrograms}>
                     <span className="back-arrow">←</span>
-                    <span>Назад к программам</span>
                 </button>
+
                 <div className="header-content">
-                    <h1>{program.icon} {program.title}</h1>
+                    <h1>
+                        <span className="program-emoji">{program.icon}</span>
+                        <span className="program-title">{program.title}</span>
+                    </h1>
                     <p>{program.description}</p>
                 </div>
             </div>
@@ -792,8 +642,11 @@ const ProgramDetail = () => {
                             <div className="overview-stats">
                                 <div className="stat">
                                     <span className="stat-label">Уровень:</span>
-                                    <span className="stat-value">{program.level === 'beginner' ? 'Новичок' : 
-                                         program.level === 'intermediate' ? 'Продолжающий' : 'Профи'}</span>
+                                    <span className="stat-value">
+                                        {program.level === 'beginner' ? 'Новичок' : 
+                                         program.level === 'intermediate' ? 'Продолжающий' : 
+                                         program.level === 'advanced' ? 'Продвинутый' : 'Профессионал'}
+                                    </span>
                                 </div>
                                 <div className="stat">
                                     <span className="stat-label">Длительность:</span>
@@ -805,50 +658,21 @@ const ProgramDetail = () => {
                                 </div>
                                 <div className="stat">
                                     <span className="stat-label">Упражнений:</span>
-                                    <span className="stat-value">{program.exercises.length}</span>
+                                    <span className="stat-value">{program.exercises?.length || 0}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {timeLeft > 0 && (
-                    <div className={`timer-overlay ${isResting ? 'resting' : 'exercising'}`}>
-                        <div className="timer-content">
-                            <div className="timer-icon">
-                                {isResting ? '⏸️' : '🏃'}
-                            </div>
-                            <div className="timer-text">
-                                <h3>{isResting ? 'Время отдыха' : 'Выполнение упражнения'}</h3>
-                                <div className="timer-display">{formatTime(timeLeft)}</div>
-                                <p>{isResting ? 'Отдыхайте и готовьтесь к следующему подходу' : 'Сосредоточьтесь на технике!'}</p>
-                            </div>
-                            <button className="timer-skip" onClick={handleNext}>
-                                Пропустить
-                            </button>
-                        </div>
-                    </div>
-                )}
-
                 <div className="exercises-section">
                     <div className="section-title">
                         <h2>🏋️ Упражнения программы</h2>
-                        <p>Всего упражнений: {program.exercises.length}</p>
-                    </div>
-
-                    <div className="exercise-timer-controls">
-                        <div className="timer-info">
-                            <div className="timer-status">
-                                <span className="status-label">Текущее состояние:</span>
-                                <span className="status-value">
-                                    {timeLeft > 0 ? (isResting ? 'Отдых' : 'Выполнение') : 'Готов'}
-                                </span>
-                            </div>
-                        </div>
+                        <p>Всего упражнений: {program.exercises?.length || 0}</p>
                     </div>
 
                     {program.exercises.map((exercise, index) => (
-                        <div key={exercise.id} className="exercise-card-detailed">
+                        <div key={exercise.id || index} className="exercise-card-detailed">
                             <div className="exercise-number">
                                 <span>#{index + 1}</span>
                             </div>
@@ -896,8 +720,8 @@ const ProgramDetail = () => {
                                     <div className="stat-card">
                                         <div className="stat-icon">⏱️</div>
                                         <div className="stat-content">
-                                            <div className="stat-label">Время упражнения</div>
-                                            <div className="stat-value">{Math.floor(exercise.duration / 60)} мин</div>
+                                            <div className="stat-label">Время</div>
+                                            <div className="stat-value">{Math.floor(exercise.duration / 60)}:{String(exercise.duration % 60).padStart(2, '0')}</div>
                                         </div>
                                     </div>
                                     
@@ -909,53 +733,18 @@ const ProgramDetail = () => {
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <div className="exercise-controls">
-                                    <button 
-                                        className="control-btn start-exercise"
-                                        onClick={() => startExercise(exercise.duration)}
-                                    >
-                                        <span>Начать упражнение</span>
-                                        <span className="control-icon">▶️</span>
-                                    </button>
-                                    <button 
-                                        className="control-btn start-rest"
-                                        onClick={() => startRest(exercise.rest)}
-                                    >
-                                        <span>Начать отдых</span>
-                                        <span className="control-icon">⏸️</span>
-                                    </button>
-                                </div>
                             </div>
-                            
-                            {/* Индикатор отдыха между упражнениями */}
-                            {index < program.exercises.length - 1 && (
-                                <div className="exercise-rest-indicator">
-                                    <div className="rest-line"></div>
-                                    <div className="rest-info">
-                                        <span className="rest-icon">⏸️</span>
-                                        <span className="rest-text">Отдых перед следующим упражнением</span>
-                                        <span className="rest-time">{exercise.rest} сек</span>
-                                    </div>
-                                    <div className="rest-line"></div>
-                                </div>
-                            )}
                         </div>
                     ))}
-                    
-                    {/* Завершение тренировки */}
-                    <div className="workout-complete">
-                        <div className="complete-icon">🏁</div>
-                        <div className="complete-content">
-                            <h3>Тренировка завершена!</h3>
-                            <p>Отличная работа! Отдохните 5-10 минут, восстановите дыхание и попейте воды.</p>
-                        </div>
-                        <button className="complete-btn" onClick={() => navigate('/programs')}>
-                            Вернуться к программам
-                        </button>
-                    </div>
                 </div>
             </div>
+
+            {program.exercises && program.exercises.length > 0 && (
+                <div className="start-workout-fab" onClick={startWorkout}>
+                    <span className="start-icon">▶️</span>
+                    <span>Начать тренировку</span>
+                </div>
+            )}
         </div>
     );
 };

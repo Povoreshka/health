@@ -1,1 +1,258 @@
-/backend
+# =====================
+# Node.js / JavaScript
+# =====================
+
+# Dependency directories
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+
+# TypeScript
+*.tsbuildinfo
+
+# =====================
+# React / Frontend
+# =====================
+
+# React build
+/build
+/static
+
+# React environment files
+.env.development
+.env.production
+
+# Service worker
+sw.js
+sw.js.map
+precache-manifest.*
+
+# =====================
+# IDE / Editor files
+# =====================
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# IntelliJ IDEA / WebStorm
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.*.swp
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# =====================
+# OS generated files
+# =====================
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.AppleDouble
+*.LSOverride
+Icon
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+*.pid
+*.seed
+*.pid.lock
+
+# =====================
+# Database
+# =====================
+
+# PostgreSQL
+*.sql
+*.dump
+*.backup
+pgdata/
+data/
+dump.rdb
+
+# SQLite
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# =====================
+# Logs
+# =====================
+
+logs/
+*.log
+log/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# =====================
+# Testing
+# =====================
+
+/coverage
+.nyc_output
+*.lcov
+/junit.xml
+/test-results
+
+# Jest
+/jest.config.js
+/setupTests.js
+__snapshots__/
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+cypress/fixtures/
+
+# =====================
+# Docker
+# =====================
+
+docker-compose.override.yml
+.docker/
+Dockerfile.dev
+
+# =====================
+# Misc
+# =====================
+
+*.pem
+*.crt
+*.key
+*.cert
+
+# secrets
+*.secret
+*.secrets
+secrets/
+keys/
+
+# temporary files
+.tmp/
+.temp/
+tmp/
+temp/
+
+# backups
+*.bak
+*.backup
+*.old
+
+# package locks (оставьте один из них)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# =====================
+# Application specific
+# =====================
+
+# Uploads
+uploads/
+images/
+temp-uploads/
+
+# Sessions
+sessions/
+session-store/
+
+# Production files
+.production
+production.json
+
+# API keys
+.env.keys
+keys.json
+
+# Local development overrides
+*.local.json
+*.local.js
+*.local.ts
+
+# Debug files
+debug.log
+error.log
+
+# Performance profiles
+profile-*.json
+heap-*.heapsnapshot
+
+# =====================
+# Keep important files
+# =====================
+
+!.env.example
+!.gitkeep
+!*.sample
+
+# =====================
+# Archive / Dist
+# =====================
+
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Don't ignore these important files
+!.gitignore
+!.eslintrc.js
+!.prettierrc
+!.env.example
+!README.md
+!package.json

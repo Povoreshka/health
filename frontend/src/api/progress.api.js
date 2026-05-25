@@ -1,27 +1,28 @@
-import api from './axios.js';
+// src/api/progress.api.js
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-export const getProgressData = async (period = 'week') => {
-    try {
-        const response = await api.get(`/progress?period=${period}`);
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching progress data:', error);
-        // Моковые данные для демо
-        const days = period === 'week' ? 7 : period === 'month' ? 30 : 90;
-        return Array.from({ length: days }, (_, i) => ({
-            date: new Date(Date.now() - (days - i - 1) * 86400000),
-            weight: 70 + Math.sin(i * 0.3) * 2,
-            bmi: 22 + Math.sin(i * 0.3) * 0.6,
-            workouts: Math.floor(Math.random() * 3),
-            calories: Math.floor(Math.random() * 500 + 200),
-            steps: Math.floor(Math.random() * 5000 + 5000)
-        }));
+export const progressAPI = {
+    // Получить прогресс веса
+    getWeightProgress: async (userId) => {
+        try {
+            const response = await fetch(`${API_URL}/health/${userId}/weight-progress`);
+            if (!response.ok) throw new Error('Failed to fetch weight progress');
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            return [];
+        }
+    },
+
+    // Получить прогресс тренировок
+    getWorkoutProgress: async (userId, period = 'month') => {
+        try {
+            const response = await fetch(`${API_URL}/workouts/stats/${userId}?period=${period}`);
+            if (!response.ok) throw new Error('Failed to fetch workout progress');
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            return [];
+        }
     }
 };
-
-// Экспорт по умолчанию
-const progressApi = {
-    getProgressData
-};
-
-export default progressApi;

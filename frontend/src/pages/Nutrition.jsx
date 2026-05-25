@@ -5,6 +5,18 @@ import './Nutrition.css';
 const Nutrition = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('weightGain');
+    
+    // Состояния для калькулятора калорий
+    const [weight, setWeight] = useState('');
+    const [height, setHeight] = useState('');
+    const [age, setAge] = useState('');
+    const [activity, setActivity] = useState('moderate');
+    const [goal, setGoal] = useState('maintain');
+    const [calculatedCalories, setCalculatedCalories] = useState(null);
+
+    React.useEffect(() => {
+    window.scrollTo(0, 0);
+}, []);
 
     const nutritionData = {
         weightGain: {
@@ -87,7 +99,190 @@ const Nutrition = () => {
         }
     };
 
+    // Данные для пятой вкладки "Спорт и вода"
+    const sportsWaterData = {
+        preWorkout: {
+            title: "За 1.5-2 часа до тренировки",
+            description: "Сложные углеводы + умеренное количество белка",
+            foods: ["Овсянка с бананом", "Рис с курицей", "Цельнозерновой хлеб с творогом", "Макароны из твердых сортов с томатным соусом"],
+            avoid: ["Жирная пища", "Быстрые углеводы (сахар, конфеты)", "Газировка", "Острые блюда"]
+        },
+        postWorkout: {
+            title: "В течение 30-60 минут после тренировки",
+            description: "Белок + быстрые углеводы (анаболическое окно)",
+            foods: ["Протеиновый коктейль (сывороточный протеин)", "Творог с медом и ягодами", "Курица с рисом", "Банан + протеиновый батончик"],
+            avoid: ["Алкоголь", "Жирная пища (жареное)", "Фастфуд"]
+        },
+        workoutTips: [
+            { tip: "Пейте воду во время тренировки каждые 15-20 минут по 150-200 мл", icon: "💧" },
+            { tip: "Не тренируйтесь на голодный желудок - это может привести к катаболизму мышц", icon: "⚠️" },
+            { tip: "За 30 минут до тренировки можно выпить черный кофе или зеленый чай без сахара", icon: "☕" },
+            { tip: "После тренировки обязательна заминка (растяжка) на 10-15 минут", icon: "🧘" }
+        ],
+        waterIntake: {
+            formula: "Вес (кг) × 30-35 мл = суточная норма",
+            tips: [
+                "Пейте 1-2 стакана воды сразу после пробуждения - запускает метаболизм",
+                "За 20-30 минут до еды - улучшает пищеварение и снижает аппетит",
+                "Во время тренировки - каждые 15-20 минут по глотку",
+                "Пейте воду комнатной температуры - она лучше усваивается",
+                "Добавьте лимон или мяту для вкуса, если трудно пить воду"
+            ],
+            signsOfDehydration: [
+                "Сухость во рту",
+                "Темная моча",
+                "Головная боль",
+                "Снижение работоспособности",
+                "Мышечные судороги"
+            ]
+        },
+        supplements: [
+            { name: "Протеин", description: "Восстановление мышц, 1.5-2г на кг веса в день", icon: "🥛", bestTime: "После тренировки или между приемами пищи" },
+            { name: "Креатин", description: "Увеличивает силу и выносливость", icon: "⚡", bestTime: "После тренировки, 3-5г в день" },
+            { name: "BCAA", description: "Защита мышц от разрушения", icon: "💪", bestTime: "До, во время или после тренировки" },
+            { name: "Омега-3", description: "Поддержка суставов и сердца", icon: "🐟", bestTime: "Во время еды" },
+            { name: "Витамин D", description: "Усвоение кальция, иммунитет", icon: "☀️", bestTime: "Утром во время еды" }
+        ]
+    };
+
+    // Функция расчета калорий по формуле Миффлина - Сан Жеора
+    const calculateCalories = () => {
+        if (!weight || !height || !age) return;
+        
+        let bmr;
+        bmr = 10 * parseFloat(weight) + 6.25 * parseFloat(height) - 5 * parseFloat(age) + 5;
+        
+        let activityMultiplier;
+        switch(activity) {
+            case 'sedentary': activityMultiplier = 1.2; break;
+            case 'light': activityMultiplier = 1.375; break;
+            case 'moderate': activityMultiplier = 1.55; break;
+            case 'active': activityMultiplier = 1.725; break;
+            default: activityMultiplier = 1.55;
+        }
+        
+        let tdee = bmr * activityMultiplier;
+        
+        if (goal === 'loss') tdee -= 300;
+        else if (goal === 'gain') tdee += 300;
+        
+        setCalculatedCalories(Math.round(tdee));
+    };
+
+    // Рендер новой вкладки "Спорт и вода"
+    const renderSportsWaterTab = () => {
+        return (
+            <div className="nutrition-content">
+                {/* Питание до и после тренировки */}
+                <div className="workout-nutrition-section">
+                    <h3>🏋️ Питание и тренировки</h3>
+                    <div className="workout-grid">
+                        <div className="workout-card before">
+                            <div className="workout-icon">🏃‍♂️</div>
+                            <h4>ДО ТРЕНИРОВКИ</h4>
+                            <p className="workout-time">{sportsWaterData.preWorkout.title}</p>
+                            <p className="workout-desc">{sportsWaterData.preWorkout.description}</p>
+                            <div className="food-list">
+                                <strong>✅ Рекомендуется:</strong>
+                                <ul>
+                                    {sportsWaterData.preWorkout.foods.map((food, idx) => (
+                                        <li key={idx}>{food}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="avoid-list">
+                                <strong>❌ Избегать:</strong> {sportsWaterData.preWorkout.avoid.join(', ')}
+                            </div>
+                        </div>
+                        <div className="workout-card after">
+                            <div className="workout-icon">🏋️‍♂️</div>
+                            <h4>ПОСЛЕ ТРЕНИРОВКИ</h4>
+                            <p className="workout-time">{sportsWaterData.postWorkout.title}</p>
+                            <p className="workout-desc">{sportsWaterData.postWorkout.description}</p>
+                            <div className="food-list">
+                                <strong>✅ Рекомендуется:</strong>
+                                <ul>
+                                    {sportsWaterData.postWorkout.foods.map((food, idx) => (
+                                        <li key={idx}>{food}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="avoid-list">
+                                <strong>❌ Избегать:</strong> {sportsWaterData.postWorkout.avoid.join(', ')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Советы по тренировкам */}
+                <div className="workout-tips-section">
+                    <h3>📌 Важные советы</h3>
+                    <div className="workout-tips-grid">
+                        {sportsWaterData.workoutTips.map((item, index) => (
+                            <div key={index} className="workout-tip-card">
+                                <div className="workout-tip-icon">{item.icon}</div>
+                                <p>{item.tip}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Водный баланс */}
+                <div className="water-balance-section">
+                    <h3>💧 Водный баланс</h3>
+                    <div className="water-info">
+                        <div className="water-formula">
+                            <div className="water-icon">💦</div>
+                            <div>
+                                <strong>{sportsWaterData.waterIntake.formula}</strong>
+                                <p className="water-example">Пример: при весе 70 кг нужно 2.1 - 2.45 литра воды в день</p>
+                            </div>
+                        </div>
+                        <div className="water-tips">
+                            <div className="water-tips-title">📋 Правила питьевого режима:</div>
+                            {sportsWaterData.waterIntake.tips.map((tip, idx) => (
+                                <div key={idx} className="water-tip">✓ {tip}</div>
+                            ))}
+                        </div>
+                        <div className="dehydration-signs">
+                            <div className="dehydration-title">⚠️ Признаки обезвоживания:</div>
+                            <div className="signs-list">
+                                {sportsWaterData.waterIntake.signsOfDehydration.map((sign, idx) => (
+                                    <span key={idx} className="sign-badge">{sign}</span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Спортивные добавки */}
+                <div className="supplements-section">
+                    <h3>💊 Спортивные добавки (база)</h3>
+                    <div className="supplements-grid">
+                        {sportsWaterData.supplements.map((supp, index) => (
+                            <div key={index} className="supplement-card">
+                                <div className="supplement-icon">{supp.icon}</div>
+                                <div className="supplement-info">
+                                    <h4>{supp.name}</h4>
+                                    <p>{supp.description}</p>
+                                    <div className="supplement-time">🕐 {supp.bestTime}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="supplements-note">
+                        💡 *Перед приемом любых добавок рекомендуется проконсультироваться с врачом
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const renderContent = () => {
+        if (activeTab === 'sportsWater') {
+            return renderSportsWaterTab();
+        }
+
         const data = nutritionData[activeTab];
         
         switch(activeTab) {
@@ -329,27 +524,64 @@ const Nutrition = () => {
                     <span className="tab-icon">⚖️</span>
                     <span className="tab-text">Похудение</span>
                 </button>
+                <button 
+                    className={`tab-button ${activeTab === 'sportsWater' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('sportsWater')}
+                >
+                    <span className="tab-icon">🏋️</span>
+                    <span className="tab-text">Спорт & Вода</span>
+                </button>
+            </div>
+
+            {/* Калькулятор калорий */}
+            <div className="nutrition-calculator">
+                <h3>📊 Калькулятор дневной нормы калорий</h3>
+                <div className="calculator-form">
+                    <div className="calc-row">
+                        <input 
+                            type="number" 
+                            placeholder="Вес (кг)" 
+                            value={weight}
+                            onChange={(e) => setWeight(e.target.value)}
+                        />
+                        <input 
+                            type="number" 
+                            placeholder="Рост (см)" 
+                            value={height}
+                            onChange={(e) => setHeight(e.target.value)}
+                        />
+                        <input 
+                            type="number" 
+                            placeholder="Возраст (лет)" 
+                            value={age}
+                            onChange={(e) => setAge(e.target.value)}
+                        />
+                    </div>
+                    <div className="calc-row">
+                        <select value={activity} onChange={(e) => setActivity(e.target.value)}>
+                            <option value="sedentary">Минимальная активность</option>
+                            <option value="light">Легкая активность (1-3 раза в неделю)</option>
+                            <option value="moderate">Средняя активность (3-5 раз)</option>
+                            <option value="active">Высокая активность (6-7 раз)</option>
+                        </select>
+                        <select value={goal} onChange={(e) => setGoal(e.target.value)}>
+                            <option value="loss">Похудение (-300 ккал)</option>
+                            <option value="maintain">Поддержание веса</option>
+                            <option value="gain">Набор массы (+300 ккал)</option>
+                        </select>
+                        <button onClick={calculateCalories}>Рассчитать</button>
+                    </div>
+                    {calculatedCalories && (
+                        <div className="calculator-result">
+                            <div className="result-value">{calculatedCalories} ккал</div>
+                            <div className="result-label">ваша дневная норма</div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="nutrition-main">
                 {renderContent()}
-            </div>
-
-            <div className="nutrition-tips">
-                <div className="tip-card global-tip">
-                    <div className="tip-icon">💡</div>
-                    <div>
-                        <h4>Полезный совет</h4>
-                        <p>Пейте достаточное количество воды (30-35 мл на 1 кг веса) для оптимального метаболизма</p>
-                    </div>
-                </div>
-                <div className="tip-card global-tip">
-                    <div className="tip-icon">⏰</div>
-                    <div>
-                        <h4>Регулярность</h4>
-                        <p>Старайтесь есть в одно и то же время каждый день для стабильного обмена веществ</p>
-                    </div>
-                </div>
             </div>
         </div>
     );

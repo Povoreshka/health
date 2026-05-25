@@ -21,13 +21,15 @@ const OnboardingStep4 = () => {
         { id: 'professional', label: 'Профессионал', desc: 'Спортсмен с большим опытом', icon: '💪' },
     ];
 
+    // ИСПРАВЛЕНО: Сохраняем experience в отдельный ключ onboardingStep4
     const handleNext = () => {
-        const step1Data = JSON.parse(localStorage.getItem('onboardingStep1') || '{}');
-        const stepData = {
-            ...step1Data,
-            experience
+        // НЕ ПЕРЕЗАПИСЫВАЕМ onboardingStep1!
+        const step4Data = {
+            experience: experience
         };
-        localStorage.setItem('onboardingStep1', JSON.stringify(stepData));
+        
+        console.log('Saving experience to onboardingStep4:', step4Data);
+        localStorage.setItem('onboardingStep4', JSON.stringify(step4Data));
         navigate('/onboarding/5');
     };
 

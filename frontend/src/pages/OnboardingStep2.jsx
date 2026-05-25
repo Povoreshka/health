@@ -4,7 +4,7 @@ import './OnboardingStep2.css';
 
 const OnboardingStep2 = () => {
     const [height, setHeight] = useState('170');
-    const [weight, setWeight] = useState('90');
+    const [weight, setWeight] = useState('70');
     
     const navigate = useNavigate();
 
@@ -62,59 +62,39 @@ const OnboardingStep2 = () => {
         
         const bmi = parseFloat(bmiValue);
         
-        // Определяем точную позицию на основе диапазонов BMI
         if (bmi < 18.5) {
-            // Недостаточный вес: 15-18.5
             return ((bmi - 15) / 3.5) * 25;
         } else if (bmi < 25) {
-            // Нормальный вес: 18.5-25
             return 25 + ((bmi - 18.5) / 6.5) * 25;
         } else if (bmi < 30) {
-            // Избыточный вес: 25-30
             return 50 + ((bmi - 25) / 5) * 25;
         } else {
-            // Ожирение: 30-40
             const position = 75 + ((bmi - 30) / 10) * 25;
-            // Ограничиваем максимум 95%, чтобы не выходить за пределы
             return Math.min(position, 95);
         }
     };
 
     const handleHeightChange = (e) => {
         let value = e.target.value;
-        
-        // Удаляем все нецифровые символы, кроме пустой строки
         value = value.replace(/[^0-9]/g, '');
-        
-        // Если строка пустая или начинается с 0 и имеет длину больше 1, убираем ведущие нули
         if (value.length > 1 && value.startsWith('0')) {
             value = value.replace(/^0+/, '');
         }
-        
-        // Ограничиваем максимальную длину
         if (value.length > 3) {
             value = value.substring(0, 3);
         }
-        
         setHeight(value);
     };
 
     const handleWeightChange = (e) => {
         let value = e.target.value;
-        
-        // Удаляем все нецифровые символы, кроме пустой строки
         value = value.replace(/[^0-9]/g, '');
-        
-        // Если строка пустая или начинается с 0 и имеет длину больше 1, убираем ведущие нули
         if (value.length > 1 && value.startsWith('0')) {
             value = value.replace(/^0+/, '');
         }
-        
-        // Ограничиваем максимальную длину
         if (value.length > 3) {
             value = value.substring(0, 3);
         }
-        
         setWeight(value);
     };
 
@@ -133,7 +113,7 @@ const OnboardingStep2 = () => {
 
     const handleWeightBlur = () => {
         if (weight === '') {
-            setWeight('90');
+            setWeight('70');
         } else {
             const weightNum = parseInt(weight);
             if (weightNum < 30) {
@@ -151,9 +131,9 @@ const OnboardingStep2 = () => {
     };
 
     const getWeightValue = () => {
-        if (weight === '') return 90;
+        if (weight === '') return 70;
         const weightNum = parseInt(weight);
-        return isNaN(weightNum) ? 90 : weightNum;
+        return isNaN(weightNum) ? 70 : weightNum;
     };
 
     const handleHeightIncrement = () => {
@@ -185,25 +165,13 @@ const OnboardingStep2 = () => {
     };
 
     const handleKeyDown = (e, type) => {
-        // Разрешаем стандартные клавиши навигации
-        if (
-            e.key === 'Backspace' ||
-            e.key === 'Delete' ||
-            e.key === 'Tab' ||
-            e.key === 'ArrowLeft' ||
-            e.key === 'ArrowRight' ||
-            e.key === 'Home' ||
-            e.key === 'End'
-        ) {
+        if (e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Tab' ||
+            e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Home' || e.key === 'End') {
             return;
         }
-
-        // Разрешаем ввод цифр и клавиши управления
         if (!/[0-9]/.test(e.key) && e.key !== 'Enter') {
             e.preventDefault();
         }
-
-        // Обработка клавиш вверх/вниз для изменения значения
         if (e.key === 'ArrowUp') {
             e.preventDefault();
             if (type === 'height') {
@@ -221,19 +189,21 @@ const OnboardingStep2 = () => {
         }
     };
 
+    // ГЛАВНАЯ ФУНКЦИЯ - СОХРАНЯЕМ В ОТДЕЛЬНЫЙ КЛЮЧ onboardingStep2
     const handleNext = () => {
-        // Убедимся, что значения корректны перед сохранением
         const finalHeight = getHeightValue();
         const finalWeight = getWeightValue();
         
-        const step1Data = JSON.parse(localStorage.getItem('onboardingStep1') || '{}');
-        const stepData = {
-            ...step1Data,
+        // СОХРАНЯЕМ В ОТДЕЛЬНЫЙ КЛЮЧ - НЕ ПЕРЕЗАПИСЫВАЕМ onboardingStep1!
+        const step2Data = {
             height: finalHeight,
             weight: finalWeight,
             bmi: calculateBMI()
         };
-        localStorage.setItem('onboardingStep1', JSON.stringify(stepData));
+        
+        console.log('Saving step2 data to localStorage:', step2Data);
+        localStorage.setItem('onboardingStep2', JSON.stringify(step2Data));
+        
         navigate('/onboarding/3');
     };
 
@@ -269,9 +239,7 @@ const OnboardingStep2 = () => {
                 </div>
                 
                 <div className="form-container">
-                    {/* Рост и вес в одной строке */}
                     <div className="parameters-row">
-                        {/* Рост */}
                         <div className="parameter-column">
                             <label className="section-label">РОСТ (СМ)</label>
                             <div className="value-input-container">
@@ -314,7 +282,6 @@ const OnboardingStep2 = () => {
                             </div>
                         </div>
                         
-                        {/* Вес */}
                         <div className="parameter-column">
                             <label className="section-label">ВЕС (КГ)</label>
                             <div className="value-input-container">
@@ -337,7 +304,7 @@ const OnboardingStep2 = () => {
                                             className="value-input"
                                             inputMode="numeric"
                                             pattern="[0-9]*"
-                                            placeholder="90"
+                                            placeholder="70"
                                         />
                                         <span className="input-unit">кг</span>
                                     </div>

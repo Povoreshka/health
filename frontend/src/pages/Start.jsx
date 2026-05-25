@@ -1,3 +1,4 @@
+// src/pages/Start.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Start.css';
@@ -8,7 +9,13 @@ const Start = () => {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Если пользователь уже авторизован, перенаправляем на home
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      navigate('/home');
+    }
+  }, [navigate]);
 
   return (
     <div className="start-container">
@@ -58,13 +65,13 @@ const Start = () => {
         
         <button 
           className="start-button"
-          onClick={() => navigate("/onboarding/1")}
+          onClick={() => navigate("/onboarding/0")}
         >
           Начать
         </button>
         
         <p className="login-prompt">
-          Есть аккаунт? <span onClick={() => navigate("/login")} className="login-link">Войти</span>
+          Уже есть аккаунт? <span onClick={() => navigate("/onboarding/0")} className="login-link">Войти</span>
         </p>
 
         {/* Анимированные спортивные смайлики на фоне */}
