@@ -1,5 +1,5 @@
 // src/api/workouts.api.js
-const API_URL = '/api';
+const API_URL = process.env.REACT_APP_API_URL;
 
 export const workoutsAPI = {
     getHistory: async (userId) => {

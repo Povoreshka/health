@@ -1,7 +1,7 @@
 // src/api/health.api.js
 
 // Используем абсолютный URL к бэкенду
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL;
 
 export const healthAPI = {
     // Получить все записи здоровья пользователя

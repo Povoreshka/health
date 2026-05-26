@@ -656,6 +656,8 @@ body {
     position: fixed;
     inset: 0;
 
+    padding: 20px;
+
     background: rgba(0,0,0,0.7);
 
     display: flex;
@@ -665,25 +667,80 @@ body {
     z-index: 9999;
 
     backdrop-filter: blur(10px);
+
+    overflow-y: auto;
 }
 
-.modal-content {
-    width: 95%;
+.modal-content-h {
+    width: 100%;
     max-width: 760px;
 
     background: var(--card);
-
     border-radius: 30px;
-
     padding: 30px;
-
     border: 1px solid var(--border);
+
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+
+    box-sizing: border-box;
+    animation: modalFade 0.25s ease;
+}
+
+@keyframes modalFade {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+
+    gap: 16px;
+
+    margin: -30px -30px 24px;
+    padding: 24px 30px 20px;
+
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255,255,255,0.05),
+            rgba(255,255,255,0.02)
+        );
+
+    border-radius: 30px 30px 0 0;
+
+    backdrop-filter: blur(20px);
+}
+
+.modal-header h2 {
+    margin: 0;
+
+    font-size: 28px;
+    font-weight: 800;
+
+    line-height: 1.2;
+
+    color: white;
+}
+
+.modal-body {
+    width: 100%;
+}
+
+.modal-description {
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    line-height: 1.5;
 }
 
 .close-modal {
@@ -693,19 +750,37 @@ body {
     width: 42px;
     height: 42px;
 
+    min-width: 42px;
+
     border-radius: 14px;
 
     color: white;
     font-size: 24px;
 
     cursor: pointer;
+
+    transition: 0.2s ease;
+}
+
+.close-modal:hover {
+    background: rgba(255,255,255,0.14);
+    transform: scale(1.05);
 }
 
 .schedule-edit-item {
     display: flex;
     gap: 14px;
+
     margin-top: 18px;
-    flex-wrap: wrap;
+
+    align-items: center;
+}
+
+.schedule-day {
+    min-width: 140px;
+
+    font-weight: 700;
+    font-size: 15px;
 }
 
 .schedule-select,
@@ -721,15 +796,61 @@ body {
     padding: 14px 16px;
 
     border-radius: 16px;
+
+    font-size: 15px;
+
+    outline: none;
 }
+
+.schedule-select:focus,
+.schedule-select-program:focus {
+    border-color: rgba(255,200,61,0.4);
+}
+
 .schedule-select,
 .schedule-select-program option {
     background: #1b1d26;
     color: #ffffff;
-
-    padding: 10px;
 }
 
+.schedule-actions-modal {
+    display: flex;
+    gap: 14px;
+
+    margin-top: 30px;
+}
+
+.reset-schedule-btn,
+.save-schedule-btn {
+    flex: 1;
+
+    border: none;
+
+    padding: 16px 18px;
+
+    border-radius: 18px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+}
+
+.reset-schedule-btn {
+    background: rgba(255,255,255,0.08);
+    color: white;
+}
+
+.save-schedule-btn {
+    background: var(--yellow);
+    color: black;
+}
+
+.reset-schedule-btn:hover,
+.save-schedule-btn:hover {
+    transform: translateY(-2px);
+}
 
 /* =========================
    LOADING
@@ -1345,5 +1466,115 @@ body {
     .status-badge-custom {
         font-size: 10px;
         padding: 9px 10px;
+    }
+}/* =========================
+   MODAL MOBILE FIX
+========================= */
+
+@media (max-width: 768px) {
+
+    .modal-overlay {
+        display: flex;
+
+        align-items: flex-start;
+        justify-content: center;
+
+        overflow-y: auto;
+
+        padding-top: 40px;
+        padding-left: 12px;
+        padding-right: 12px;
+
+        /* только защита от bottom-nav */
+        padding-bottom:
+            calc(120px + env(safe-area-inset-bottom));
+    }
+
+    .modal-content-h {
+        width: 100%;
+        max-width: 100%;
+
+        /* меньше высота */
+        max-height: calc(100dvh - 180px);
+
+        overflow-y: auto;
+
+        border-radius: 24px;
+
+        padding: 24px 18px;
+
+        /* центрирование */
+        margin: auto 0;
+    }
+
+    .modal-header {
+        margin: -20px -16px 20px;
+
+        padding: 20px 16px 16px;
+
+        border-radius: 24px 24px 0 0;
+    }
+
+    .modal-header h2 {
+        font-size: 22px;
+    }
+
+    .schedule-edit-item {
+        flex-direction: column;
+
+        gap: 10px;
+    }
+
+    .schedule-select,
+    .schedule-select-program {
+        width: 100%;
+
+        min-height: 54px;
+
+        font-size: 15px;
+    }
+
+    .schedule-actions-modal {
+        display: flex;
+        flex-direction: column;
+
+        gap: 12px;
+
+        margin-top: 24px;
+    }
+}
+
+/* =========================
+   SMALL MOBILE
+========================= */
+
+@media (max-width: 480px) {
+
+    .modal-overlay {
+        padding-top: 24px;
+
+        padding-left: 10px;
+        padding-right: 10px;
+
+        padding-bottom:
+            calc(130px + env(safe-area-inset-bottom));
+    }
+    .modal-header {
+        margin: -18px -14px 18px;
+
+        padding: 18px 14px 14px;
+
+        border-radius: 20px 20px 0 0;
+    }
+
+    .modal-header h2 {
+        font-size: 19px;
+    }
+    .modal-content-h {
+        max-height: calc(100dvh - 150px);
+
+        border-radius: 20px;
+
+        margin: auto 0;
     }
 }

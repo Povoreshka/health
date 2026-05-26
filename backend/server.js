@@ -361,7 +361,7 @@ app.get('/api/custom-workouts/:userId', async (req, res) => {
 });
 
 // =====================================================
-// HEALTH ROUTES
+// HEALTH ROUTES - УПРОЩЁННАЯ ВЕРСИЯ (только существующие колонки)
 // =====================================================
 
 app.get('/api/health/:userId', async (req, res) => {
@@ -373,30 +373,156 @@ app.get('/api/health/:userId', async (req, res) => {
         );
         res.json(result.rows);
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error fetching health entries:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
+// Упрощённый POST эндпоинт - только базовые поля
 app.post('/api/health', async (req, res) => {
+    // Принимаем только те поля, которые точно есть в таблице
     const { user_id, date, weight, body_fat, avg_heart_rate, energy_level, sleep_quality, notes } = req.body;
+    
+    console.log('Saving health entry:', { user_id, date, weight, body_fat, energy_level });
+    
+    try {
+        // Проверяем, существует ли запись
+        const checkQuery = 'SELECT id FROM health_entries WHERE user_id = $1 AND date = $2';
+        const existing = await db.query(checkQuery, [user_id, date]);
+        
+        let result;
+        
+        if (existing.rows.length > 0) {
+            // Обновляем существующую запись
+            const updateQuery = `
+                UPDATE health_entries 
+                SET 
+                    weight = COALESCE($3, weight),
+                    body_fat = COALESCE($4, body_fat),
+                    avg_heart_rate = COALESCE($5, avg_heart_rate),
+                    energy_level = COALESCE($6, energy_level),
+                    sleep_quality = COALESCE($7, sleep_quality),
+                    notes = COALESCE($8, notes),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = $1 AND date = $2
+                RETURNING id
+            `;
+            result = await db.query(updateQuery, [
+                user_id, date,
+                weight || null, 
+                body_fat || null, 
+                avg_heart_rate || null, 
+                energy_level || null, 
+                sleep_quality || null, 
+                notes || null
+            ]);
+        } else {
+            // Создаём новую запись
+            const insertQuery = `
+                INSERT INTO health_entries (
+                    user_id, date, weight, body_fat, avg_heart_rate, 
+                    energy_level, sleep_quality, notes
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                RETURNING id
+            `;
+            result = await db.query(insertQuery, [
+                user_id, date,
+                weight || null, 
+                body_fat || null, 
+                avg_heart_rate || null, 
+                energy_level || null, 
+                sleep_quality || null, 
+                notes || null
+            ]);
+        }
+        
+        // Если указан вес, обновляем данные пользователя
+        if (weight && user_id) {
+            const userResult = await db.query('SELECT height FROM users WHERE id = $1', [user_id]);
+            const height = userResult.rows[0]?.height;
+            
+            if (height && weight) {
+                const heightInMeters = height / 100;
+                const bmi = parseFloat((weight / (heightInMeters * heightInMeters)).toFixed(1));
+                await db.query('UPDATE users SET weight = $1, bmi = $2 WHERE id = $3', [weight, bmi, user_id]);
+            } else {
+                await db.query('UPDATE users SET weight = $1 WHERE id = $2', [weight, user_id]);
+            }
+            
+            // Проверяем достижения
+            await checkAndAwardAchievements(user_id);
+        }
+        
+        // Получаем и возвращаем сохранённую запись
+        const savedEntry = await db.query('SELECT * FROM health_entries WHERE id = $1', [result.rows[0].id]);
+        res.status(201).json(savedEntry.rows[0]);
+        
+    } catch (error) {
+        console.error('Error saving health entry:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// PUT эндпоинт для обновления по ID
+app.put('/api/health/:id', async (req, res) => {
+    const { id } = req.params;
+    const { date, weight, body_fat, avg_heart_rate, energy_level, sleep_quality, notes } = req.body;
+    
     try {
         const result = await db.query(
-            `INSERT INTO health_entries (user_id, date, weight, body_fat, avg_heart_rate, energy_level, sleep_quality, notes) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-             ON CONFLICT (user_id, date) DO UPDATE SET 
-             weight = COALESCE($3, weight), 
-             body_fat = COALESCE($4, body_fat), 
-             avg_heart_rate = COALESCE($5, avg_heart_rate), 
-             energy_level = COALESCE($6, energy_level), 
-             sleep_quality = COALESCE($7, sleep_quality), 
-             notes = COALESCE($8, notes)
-             RETURNING id`,
-            [user_id, date, weight, body_fat, avg_heart_rate, energy_level, sleep_quality, notes]
+            `UPDATE health_entries 
+             SET 
+                 date = COALESCE($2, date),
+                 weight = COALESCE($3, weight),
+                 body_fat = COALESCE($4, body_fat),
+                 avg_heart_rate = COALESCE($5, avg_heart_rate),
+                 energy_level = COALESCE($6, energy_level),
+                 sleep_quality = COALESCE($7, sleep_quality),
+                 notes = COALESCE($8, notes),
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $1
+             RETURNING *`,
+            [id, date, weight || null, body_fat || null, avg_heart_rate || null, energy_level || null, sleep_quality || null, notes || null]
         );
-        res.status(201).json({ id: result.rows[0].id, message: 'Health entry saved successfully' });
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Entry not found' });
+        }
+        
+        // Если обновили вес, обновляем пользователя
+        if (weight) {
+            const userId = result.rows[0].user_id;
+            const userResult = await db.query('SELECT height FROM users WHERE id = $1', [userId]);
+            const height = userResult.rows[0]?.height;
+            
+            if (height && weight) {
+                const heightInMeters = height / 100;
+                const bmi = parseFloat((weight / (heightInMeters * heightInMeters)).toFixed(1));
+                await db.query('UPDATE users SET weight = $1, bmi = $2 WHERE id = $3', [weight, bmi, userId]);
+            } else {
+                await db.query('UPDATE users SET weight = $1 WHERE id = $2', [weight, userId]);
+            }
+        }
+        
+        res.json(result.rows[0]);
+        
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error updating health entry:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// DELETE эндпоинт
+app.delete('/api/health/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await db.query('DELETE FROM health_entries WHERE id = $1 RETURNING id', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Entry not found' });
+        }
+        res.json({ message: 'Health entry deleted successfully', id: result.rows[0].id });
+    } catch (error) {
+        console.error('Error deleting health entry:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -915,47 +1041,154 @@ app.get('/api/achievements/progress/:userId', async (req, res) => {
     }
 });
 // Эндпоинт для обновления веса и проверки достижений
+// app.post('/api/health', async (req, res) => {
+//     const { user_id, date, weight, body_fat, avg_heart_rate, energy_level, sleep_quality, notes } = req.body;
+//     try {
+//         const result = await db.query(
+//             `INSERT INTO health_entries (user_id, date, weight, body_fat, avg_heart_rate, energy_level, sleep_quality, notes) 
+//              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+//              ON CONFLICT (user_id, date) DO UPDATE SET 
+//              weight = COALESCE($3, weight), 
+//              body_fat = COALESCE($4, body_fat), 
+//              avg_heart_rate = COALESCE($5, avg_heart_rate), 
+//              energy_level = COALESCE($6, energy_level), 
+//              sleep_quality = COALESCE($7, sleep_quality), 
+//              notes = COALESCE($8, notes)
+//              RETURNING id`,
+//             [user_id, date, weight, body_fat, avg_heart_rate, energy_level, sleep_quality, notes]
+//         );
+        
+//         // Если обновили вес, проверяем достижения
+//         if (weight) {
+//             // Обновляем вес в таблице users
+//             await db.query('UPDATE users SET weight = $1 WHERE id = $2', [weight, user_id]);
+            
+//             // Пересчитываем BMI
+//             const userResult = await db.query('SELECT height FROM users WHERE id = $1', [user_id]);
+//             const height = userResult.rows[0]?.height;
+//             if (height && weight) {
+//                 const heightInMeters = height / 100;
+//                 const bmi = parseFloat((weight / (heightInMeters * heightInMeters)).toFixed(1));
+//                 await db.query('UPDATE users SET bmi = $1 WHERE id = $2', [bmi, user_id]);
+//             }
+            
+//             // Проверяем достижения (особенно связанные с весом)
+//             const newAchievements = await checkAndAwardAchievements(user_id);
+//             if (newAchievements.length > 0) {
+//                 console.log(`New achievements for weight update: ${newAchievements.map(a => a.title).join(', ')}`);
+//             }
+//         }
+        
+//         res.status(201).json({ id: result.rows[0].id, message: 'Health entry saved successfully' });
+//     } catch (error) {
+//         console.error('Error:', error);
+//         res.status(500).json({ error: error.message });
+//     }
+// });
+// Исправленный эндпоинт для сохранения здоровья
 app.post('/api/health', async (req, res) => {
-    const { user_id, date, weight, body_fat, avg_heart_rate, energy_level, sleep_quality, notes } = req.body;
+    const { 
+        user_id, date, weight, body_fat, muscle_mass,
+        chest, waist, hips, thigh, biceps,
+        avg_heart_rate, max_heart_rate,
+        calories, protein, fats, carbs, water,
+        energy_level, pain_level, sleep_quality, notes 
+    } = req.body;
+    
     try {
-        const result = await db.query(
-            `INSERT INTO health_entries (user_id, date, weight, body_fat, avg_heart_rate, energy_level, sleep_quality, notes) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-             ON CONFLICT (user_id, date) DO UPDATE SET 
-             weight = COALESCE($3, weight), 
-             body_fat = COALESCE($4, body_fat), 
-             avg_heart_rate = COALESCE($5, avg_heart_rate), 
-             energy_level = COALESCE($6, energy_level), 
-             sleep_quality = COALESCE($7, sleep_quality), 
-             notes = COALESCE($8, notes)
-             RETURNING id`,
-            [user_id, date, weight, body_fat, avg_heart_rate, energy_level, sleep_quality, notes]
+        // Проверяем, существует ли запись за эту дату
+        const existingEntry = await db.query(
+            'SELECT id FROM health_entries WHERE user_id = $1 AND date = $2',
+            [user_id, date]
         );
         
-        // Если обновили вес, проверяем достижения
+        let result;
+        
+        if (existingEntry.rows.length > 0) {
+            // Обновляем существующую запись - указываем конкретные колонки, избегая ambiguity
+            result = await db.query(
+                `UPDATE health_entries 
+                 SET 
+                     weight = COALESCE($3, weight),
+                     body_fat = COALESCE($4, body_fat),
+                     muscle_mass = COALESCE($5, muscle_mass),
+                     chest = COALESCE($6, chest),
+                     waist = COALESCE($7, waist),
+                     hips = COALESCE($8, hips),
+                     thigh = COALESCE($9, thigh),
+                     biceps = COALESCE($10, biceps),
+                     avg_heart_rate = COALESCE($11, avg_heart_rate),
+                     max_heart_rate = COALESCE($12, max_heart_rate),
+                     calories = COALESCE($13, calories),
+                     protein = COALESCE($14, protein),
+                     fats = COALESCE($15, fats),
+                     carbs = COALESCE($16, carbs),
+                     water = COALESCE($17, water),
+                     energy_level = COALESCE($18, energy_level),
+                     pain_level = COALESCE($19, pain_level),
+                     sleep_quality = COALESCE($20, sleep_quality),
+                     notes = COALESCE($21, notes),
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE user_id = $1 AND date = $2
+                 RETURNING id`,
+                [
+                    user_id, date,
+                    weight || null, body_fat || null, muscle_mass || null,
+                    chest || null, waist || null, hips || null, thigh || null, biceps || null,
+                    avg_heart_rate || null, max_heart_rate || null,
+                    calories || null, protein || null, fats || null, carbs || null, water || null,
+                    energy_level || null, pain_level || null, sleep_quality || null, notes || null
+                ]
+            );
+        } else {
+            // Создаём новую запись
+            result = await db.query(
+                `INSERT INTO health_entries (
+                    user_id, date, weight, body_fat, muscle_mass,
+                    chest, waist, hips, thigh, biceps,
+                    avg_heart_rate, max_heart_rate,
+                    calories, protein, fats, carbs, water,
+                    energy_level, pain_level, sleep_quality, notes
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+                RETURNING id`,
+                [
+                    user_id, date,
+                    weight || null, body_fat || null, muscle_mass || null,
+                    chest || null, waist || null, hips || null, thigh || null, biceps || null,
+                    avg_heart_rate || null, max_heart_rate || null,
+                    calories || null, protein || null, fats || null, carbs || null, water || null,
+                    energy_level || null, pain_level || null, sleep_quality || null, notes || null
+                ]
+            );
+        }
+        
+        // Если обновили вес, обновляем пользователя
         if (weight) {
-            // Обновляем вес в таблице users
-            await db.query('UPDATE users SET weight = $1 WHERE id = $2', [weight, user_id]);
-            
-            // Пересчитываем BMI
+            // Получаем текущий рост пользователя
             const userResult = await db.query('SELECT height FROM users WHERE id = $1', [user_id]);
             const height = userResult.rows[0]?.height;
+            
             if (height && weight) {
                 const heightInMeters = height / 100;
                 const bmi = parseFloat((weight / (heightInMeters * heightInMeters)).toFixed(1));
-                await db.query('UPDATE users SET bmi = $1 WHERE id = $2', [bmi, user_id]);
+                await db.query('UPDATE users SET weight = $1, bmi = $2 WHERE id = $3', [weight, bmi, user_id]);
+            } else {
+                await db.query('UPDATE users SET weight = $1 WHERE id = $2', [weight, user_id]);
             }
             
-            // Проверяем достижения (особенно связанные с весом)
+            // Проверяем достижения
             const newAchievements = await checkAndAwardAchievements(user_id);
             if (newAchievements.length > 0) {
-                console.log(`New achievements for weight update: ${newAchievements.map(a => a.title).join(', ')}`);
+                console.log(`New achievements: ${newAchievements.map(a => a.title).join(', ')}`);
             }
         }
         
-        res.status(201).json({ id: result.rows[0].id, message: 'Health entry saved successfully' });
+        // Возвращаем результат
+        const savedEntry = await db.query('SELECT * FROM health_entries WHERE id = $1', [result.rows[0].id]);
+        res.status(201).json(savedEntry.rows[0]);
+        
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error saving health entry:', error);
         res.status(500).json({ error: error.message });
     }
 });

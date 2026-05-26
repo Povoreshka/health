@@ -1,6 +1,6 @@
 // src/api/users.api.js
 // Используем прямой URL к бэкенду
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL;
 
 export const usersAPI = {
     getAll: async () => {

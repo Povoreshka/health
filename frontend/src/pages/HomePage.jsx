@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './HomePage.css';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL;
 
 const HomePage = () => {
     const [userData, setUserData] = useState(null);
@@ -982,7 +982,7 @@ const HomePage = () => {
 
                 {showEditModal && (
                     <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-                        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-content-h" onClick={(e) => e.stopPropagation()}>
                             <div className="modal-header">
                                 <h2>✏️ Редактирование расписания</h2>
                                 <button className="close-modal" onClick={() => setShowEditModal(false)}>×</button>

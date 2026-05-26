@@ -9,7 +9,7 @@ import {
 } from './programsData';
 
 // API URL
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL;
 
 // Маппинг интенсивности из БД в русские названия
 const intensityLabels = {

@@ -261,70 +261,171 @@
     gap: 24px;
 }
 
-/* ===== CARDS ===== */
-
 .health-card {
     position: relative;
+    background: rgba(20, 20, 30, 0.75);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
 
     padding: 24px;
-
-    border-radius: 28px;
-
-    background:
-        linear-gradient(
-            180deg,
-            rgba(255,255,255,0.07),
-            rgba(255,255,255,0.04)
-        );
-
-    border: 1px solid rgba(255,255,255,0.08);
-
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-
     overflow: hidden;
 
     box-shadow:
-        0 20px 50px rgba(0,0,0,0.28),
-        inset 0 1px 0 rgba(255,255,255,0.04);
+        0 10px 30px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255,255,255,0.05);
 
-    transition: all 0.28s ease;
+    transition:
+        transform 0.35s ease,
+        box-shadow 0.35s ease,
+        border-color 0.35s ease;
 }
 
-.health-card:hover {
-    transform: translateY(-4px);
-
-    border-color: rgba(255,255,255,0.12);
-}
-
+/* Glow сверху */
 .health-card::before {
     content: '';
-
     position: absolute;
-    inset: 0;
+    top: -120px;
+    right: -120px;
 
-    background:
-        linear-gradient(
-            180deg,
-            rgba(255,255,255,0.03),
-            transparent 45%
-        );
+    width: 240px;
+    height: 240px;
+
+    background: radial-gradient(
+        circle,
+        rgba(59,130,246,0.25) 0%,
+        rgba(59,130,246,0) 70%
+    );
 
     pointer-events: none;
 }
 
+/* Hover эффект */
+.health-card:hover {
+    transform: translateY(-6px);
+
+    border-color: rgba(59,130,246,0.35);
+
+    box-shadow:
+        0 20px 45px rgba(0,0,0,0.45),
+        0 0 25px rgba(59,130,246,0.18);
+}
+
+/* Заголовок */
 .health-card h2 {
-    position: relative;
-    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    font-size: 1.35rem;
+    font-weight: 700;
+
+    margin-bottom: 22px;
+
+    color: #ffffff;
+}
+
+/* Иконка */
+.health-card h2 i {
+    font-style: normal;
+    font-size: 1.5rem;
 
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
 
-    margin: 0 0 22px;
+    width: 42px;
+    height: 42px;
 
-    font-size: 20px;
-    font-weight: 800;
+    border-radius: 14px;
+
+    background: linear-gradient(
+        135deg,
+        rgba(59,130,246,0.25),
+        rgba(139,92,246,0.25)
+    );
+
+    box-shadow:
+        0 4px 15px rgba(59,130,246,0.2);
+}
+
+.averages-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.average-item {
+    position: relative;
+
+    padding: 18px;
+
+    border-radius: 20px;
+
+    background: linear-gradient(
+        145deg,
+        rgba(255,255,255,0.06),
+        rgba(255,255,255,0.03)
+    );
+
+    border: 1px solid rgba(255,255,255,0.08);
+
+    backdrop-filter: blur(12px);
+
+    overflow: hidden;
+
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease,
+        border-color 0.3s ease;
+}
+
+/* Glow */
+.average-item::before {
+    content: '';
+
+    position: absolute;
+    top: -50px;
+    right: -50px;
+
+    width: 120px;
+    height: 120px;
+
+    background: radial-gradient(
+        circle,
+        rgba(59,130,246,0.18),
+        transparent 70%
+    );
+
+    pointer-events: none;
+}
+
+.average-item:hover {
+    transform: translateY(-4px);
+
+    border-color: rgba(59,130,246,0.25);
+
+    box-shadow:
+        0 12px 30px rgba(0,0,0,0.25),
+        0 0 20px rgba(59,130,246,0.15);
+}
+
+.average-label {
+    font-size: 0.95rem;
+    color: rgba(255,255,255,0.7);
+
+    margin-bottom: 10px;
+}
+
+.average-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+
+    color: #ffffff;
+
     letter-spacing: -0.5px;
 }
 
@@ -760,7 +861,7 @@
     }
 
     .health-header {
-        padding: 26px 22px 90px;
+        
         border-radius: 24px;
     }
 
@@ -788,5 +889,15 @@
 
     .form-buttons {
         flex-direction: column;
+    }
+}
+@media (max-width: 768px) {
+    .health-card {
+        padding: 18px;
+        border-radius: 20px;
+    }
+
+    .health-card h2 {
+        font-size: 1.1rem;
     }
 }

@@ -6,7 +6,7 @@ const OnboardingStep5 = () => {
     const [workoutsPerWeek, setWorkoutsPerWeek] = useState(3);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    const API_URL = 'http://localhost:5000/api';
+    const API_URL = process.env.REACT_APP_API_URL;
 
     useEffect(() => {
         const userId = localStorage.getItem('userId');

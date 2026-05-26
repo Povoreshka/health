@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
     const [error, setError] = useState(null);
     const [token, setToken] = useState(null);
 
-    const API_URL = 'http://localhost:5000/api';
+    const API_URL = process.env.REACT_APP_API_URL;
 
     useEffect(() => {
         // Загружаем пользователя из localStorage
